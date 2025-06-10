@@ -1,0 +1,28 @@
+services:
+  overseerr-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: overseerr-mcp
+    ports:
+      - "${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}"
+    env_file:
+      - .env
+    volumes:
+      - overseerr-logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6975/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - overseerr-mcp-network
+
+volumes:
+  overseerr-logs:
+
+networks:
+  overseerr-mcp-network:
+    driver: bridge 
