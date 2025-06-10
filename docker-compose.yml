@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: overseerr-mcp
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
     ports:
       - "${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}"
     env_file:
