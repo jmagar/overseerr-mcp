@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     volumes:
-      - overseerr-logs:/app/logs
+      - /mnt/cache/appdata/overseerr-mcp/logs:/app/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9151/health"]
@@ -20,11 +20,8 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - overseerr-mcp-network
-
-volumes:
-  overseerr-logs:
+      - jakenet
 
 networks:
-  overseerr-mcp-network:
-    driver: bridge 
+  jakenet:
+    external: true 
