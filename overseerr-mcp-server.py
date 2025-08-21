@@ -34,7 +34,7 @@ OVERSEERR_URL = os.getenv("OVERSEERR_URL")
 OVERSEERR_API_KEY = os.getenv("OVERSEERR_API_KEY")
 
 # Transport and Port Configuration
-OVERSEERR_MCP_TRANSPORT = os.getenv("OVERSEERR_MCP_TRANSPORT", "sse").lower()
+OVERSEERR_MCP_TRANSPORT = os.getenv("OVERSEERR_MCP_TRANSPORT", "streamable-http").lower()
 OVERSEERR_MCP_HOST = os.getenv("OVERSEERR_MCP_HOST", "0.0.0.0")
 OVERSEERR_MCP_PORT = int(os.getenv("OVERSEERR_MCP_PORT", "8001")) # Defaulting to a different port for Overseerr
 
@@ -79,35 +79,32 @@ if not OVERSEERR_URL or not OVERSEERR_API_KEY:
     logger.error("CRITICAL: OVERSEERR_URL and OVERSEERR_API_KEY must be set in environment variables. Server cannot start.")
     sys.exit(1)
 
+# Initialize the Overseerr client globally
+overseerr_client = None
+if OVERSEERR_URL and OVERSEERR_API_KEY:
+    try:
+        logger.info(f"Initializing OverseerrApiClient for {OVERSEERR_URL}")
+        overseerr_client = OverseerrApiClient(base_url=OVERSEERR_URL, api_key=OVERSEERR_API_KEY)
+        logger.info("OverseerrApiClient initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize OverseerrApiClient: {e}", exc_info=True)
+        overseerr_client = None
+else:
+    logger.error("OVERSEERR_URL and OVERSEERR_API_KEY must be set. API client not initialized.")
+
 @asynccontextmanager
 async def overseerr_lifespan(app: FastMCP):
     logger.info("Overseerr Lifespan: Startup sequence initiated.")
-    if not OVERSEERR_URL or not OVERSEERR_API_KEY:
-        logger.error("Overseerr Lifespan Error: OVERSEERR_URL and OVERSEERR_API_KEY must be set. API client will not be initialized.")
-        app.overseerr_client = None
-    else:
-        try:
-            logger.info(f"Overseerr Lifespan: Initializing OverseerrApiClient for {OVERSEERR_URL}")
-            app.overseerr_client = OverseerrApiClient(base_url=OVERSEERR_URL, api_key=OVERSEERR_API_KEY)
-            # Optionally, make a test call to ensure client is working, e.g., get settings
-            # test_settings = await app.overseerr_client.get("/settings/main") 
-            # if isinstance(test_settings, str): # Error string
-            #     log.error(f"Overseerr Lifespan Error: Test call to Overseerr failed: {test_settings}")
-            #     await app.overseerr_client.close()
-            #     app.overseerr_client = None
-            # else:
-            #     log.info("Overseerr Lifespan: API client initialized and test call successful.")
-            logger.info("Overseerr Lifespan: API client initialized.") # Simplified for now
-        except Exception as e:
-            logger.error(f"Overseerr Lifespan Error: Failed to initialize OverseerrApiClient: {e}", exc_info=True)
-            app.overseerr_client = None
+    # Store the global client in the app
+    app.overseerr_client = overseerr_client
+    logger.info(f"Overseerr Lifespan: Client stored in app: {app.overseerr_client is not None}")
     
     logger.info("Overseerr Lifespan: Startup complete.")
     yield
     # Cleanup on shutdown
     logger.info("Overseerr Lifespan: Shutdown sequence initiated.")
-    if hasattr(app, 'overseerr_client') and app.overseerr_client:
-        await app.overseerr_client.close()
+    if overseerr_client:
+        await overseerr_client.close()
         logger.info("Overseerr Lifespan: Overseerr API client closed.")
     logger.info("Overseerr Lifespan: Shutdown complete.")
 
@@ -116,6 +113,9 @@ mcp = FastMCP(
     instructions="Interact with an Overseerr instance for media requests and discovery.",
     lifespan=overseerr_lifespan
 )
+
+# Store client directly on mcp instance as well
+mcp.overseerr_client = overseerr_client
 
 # --- Tools will be added here ---
 @mcp.tool()
@@ -130,7 +130,7 @@ async def search_media(ctx: Context, query: str, media_type: Optional[str] = Non
         A list of search results or an error string.
     """
     logger.info(f"Executing tool: search_media(query='{query}', media_type='{media_type}')")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -188,7 +188,7 @@ async def get_movie_details(ctx: Context, tmdb_id: int) -> Union[Dict, str]:
         A dictionary containing movie details or an error string.
     """
     logger.info(f"Executing tool: get_movie_details(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -223,7 +223,7 @@ async def get_tv_show_details(ctx: Context, tmdb_id: int) -> Union[Dict, str]:
         A dictionary containing TV show details (including seasons) or an error string.
     """
     logger.info(f"Executing tool: get_tv_show_details(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -257,7 +257,7 @@ async def request_movie(ctx: Context, tmdb_id: int) -> Union[Dict, str]:
         A dictionary containing the request details upon success, or an error string.
     """
     logger.info(f"Executing tool: request_movie(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -303,7 +303,7 @@ async def request_tv_show(ctx: Context, tmdb_id: int, seasons: Optional[List[int
         A dictionary containing the request details upon success, or an error string.
     """
     logger.info(f"Executing tool: request_tv_show(tmdb_id={tmdb_id}, seasons={seasons})")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -350,7 +350,7 @@ async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> 
         A list of failed requests or an error string.
     """
     logger.info(f"Executing tool: list_failed_requests(count={count}, skip={skip})")
-    client = getattr(ctx.fastmcp, 'overseerr_client', None)
+    client = getattr(ctx.fastmcp, 'overseerr_client', None) or overseerr_client
     if not client:
         return "Error: Overseerr API client is not available. Check server startup logs."
 
@@ -394,8 +394,12 @@ async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> 
 async def mcp_server_health_check(request: Request) -> JSONResponse:
     logger.info("MCP server health check requested for Overseerr (custom_route).")
     service_name = "overseerr"
-    # Access client via request.app, which should be the 'mcp' instance
-    client: Optional[OverseerrApiClient] = getattr(request.app, 'overseerr_client', None)
+    # Try to access client from multiple sources
+    client: Optional[OverseerrApiClient] = (
+        getattr(request.app, 'overseerr_client', None) or 
+        getattr(mcp, 'overseerr_client', None) or 
+        overseerr_client
+    )
 
     mcp_configured = all([OVERSEERR_URL, OVERSEERR_API_KEY])
     if not mcp_configured:
@@ -433,15 +437,23 @@ def main():
 
     if OVERSEERR_MCP_TRANSPORT == "stdio":
         mcp.run()
+    elif OVERSEERR_MCP_TRANSPORT in ["http", "streamable-http"]:
+        mcp.run(
+            transport="http",  # Can use "http" or "streamable-http" - they're equivalent
+            host=OVERSEERR_MCP_HOST,
+            port=OVERSEERR_MCP_PORT,
+            path="/mcp"  # Standardized path for streamable-http
+        )
     elif OVERSEERR_MCP_TRANSPORT == "sse":
+        # Legacy SSE support (deprecated)
         mcp.run(
             transport="sse",
             host=OVERSEERR_MCP_HOST,
             port=OVERSEERR_MCP_PORT,
-            path="/mcp"  # Standardized path
+            path="/sse"
         )
     else:
-        logger.error(f"Invalid OVERSEERR_MCP_TRANSPORT: '{OVERSEERR_MCP_TRANSPORT}'. Must be 'stdio' or 'sse'. Defaulting to stdio.")
+        logger.error(f"Invalid OVERSEERR_MCP_TRANSPORT: '{OVERSEERR_MCP_TRANSPORT}'. Must be 'stdio', 'http', 'streamable-http', or 'sse'. Defaulting to stdio.")
         mcp.run() # Fallback to stdio
 
 if __name__ == "__main__":

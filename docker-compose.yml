@@ -7,21 +7,24 @@ services:
     labels:
       - com.centurylinklabs.watchtower.enable=false
     ports:
-      - "${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}"
+      - ${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}
     env_file:
       - .env
     volumes:
-      - /mnt/cache/appdata/overseerr-mcp/logs:/app/logs
+      - ${APPDATA_PATH}/overseerr-mcp/logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9151/health"]
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:9151/health
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
     networks:
       - jakenet
-
 networks:
   jakenet:
-    external: true 
+    external: true

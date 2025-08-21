@@ -18,7 +18,7 @@ fi
 # Set defaults for MCP server configuration
 export OVERSEERR_MCP_HOST=${OVERSEERR_MCP_HOST:-"0.0.0.0"}
 export OVERSEERR_MCP_PORT=${OVERSEERR_MCP_PORT:-"9151"}
-export OVERSEERR_MCP_TRANSPORT=${OVERSEERR_MCP_TRANSPORT:-"sse"}
+export OVERSEERR_MCP_TRANSPORT=${OVERSEERR_MCP_TRANSPORT:-"streamable-http"}
 export OVERSEERR_LOG_LEVEL=${OVERSEERR_LOG_LEVEL:-"INFO"}
 
 echo "Overseerr MCP Service: Configuration validated"
