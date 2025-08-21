@@ -414,13 +414,24 @@ async def mcp_server_health_check(request: Request) -> JSONResponse:
         logger.debug("Attempting to call Overseerr /settings/main endpoint for health check...")
         response = await client.get("/settings/main")
         
-        if isinstance(response, dict) and response.get("appVersion"):
-            app_version = response.get("appVersion", "N/A")
-            logger.info(f"Overseerr instance accessible. App Version: {app_version}.")
-            return JSONResponse({"status": "ok", "service_name": service_name, "service_accessible": True, "mcp_server_configured": True, "details": {"app_version": app_version, "message": "Overseerr instance is responsive."}})
-        elif isinstance(response, dict):
-            logger.warning(f"Overseerr accessible but health check returned unexpected data: {response}")
-            return JSONResponse({"status": "ok", "service_name": service_name, "service_accessible": True, "mcp_server_configured": True, "details": {"message": "Overseerr responsive but health data partial.", "raw_response": response}})
+        if isinstance(response, dict):
+            # Check for known Overseerr response fields (NOT including sensitive data like apiKey)
+            if response.get("applicationTitle") or response.get("applicationUrl"):
+                app_title = response.get("applicationTitle", "Overseerr")
+                app_url = response.get("applicationUrl", "N/A")
+                logger.info(f"Overseerr instance accessible. Title: {app_title}, URL: {app_url}")
+                return JSONResponse({"status": "ok", "service_name": service_name, "service_accessible": True, "mcp_server_configured": True, "details": {"app_title": app_title, "app_url": app_url, "message": "Overseerr instance is responsive."}})
+            elif response.get("appVersion"):
+                # Alternative response format with appVersion
+                app_version = response.get("appVersion", "N/A")
+                logger.info(f"Overseerr instance accessible. App Version: {app_version}.")
+                return JSONResponse({"status": "ok", "service_name": service_name, "service_accessible": True, "mcp_server_configured": True, "details": {"app_version": app_version, "message": "Overseerr instance is responsive."}})
+            else:
+                # Unknown response format but still a dict, so API is responding
+                # Filter out sensitive keys before logging
+                safe_keys = [k for k in response.keys() if 'api' not in k.lower() and 'key' not in k.lower() and 'token' not in k.lower() and 'secret' not in k.lower()]
+                logger.info(f"Overseerr accessible with response keys: {safe_keys[:5]}...")
+                return JSONResponse({"status": "ok", "service_name": service_name, "service_accessible": True, "mcp_server_configured": True, "details": {"message": "Overseerr API is responsive."}})
         else:
             error_detail = response if isinstance(response, str) else "Unknown error structure from API"
             logger.warning(f"Overseerr health check failed. Client returned: {error_detail}")
