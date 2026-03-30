@@ -1,0 +1,32 @@
+{
+  "name": "overseerr-mcp",
+  "version": "1.0.0",
+  "description": "Overseerr media requests via MCP tools with HTTP fallback. Search movies and TV shows, submit requests, and monitor failed requests.",
+  "author": {
+    "name": "Jacob Magar"
+  },
+  "repository": "https://github.com/jmagar/overseerr-mcp",
+  "license": "MIT",
+  "keywords": ["overseerr", "media", "requests", "plex", "mcp"],
+  "userConfig": {
+    "overseerr_mcp_url": {
+      "type": "string",
+      "title": "Overseerr MCP Server URL",
+      "description": "URL of the overseerr-mcp MCP server. Default http://localhost:6975 works if running via docker compose in this repo. Change if running on a different host or port.",
+      "default": "http://localhost:6975",
+      "sensitive": false
+    },
+    "overseerr_url": {
+      "type": "string",
+      "title": "Overseerr Server URL",
+      "description": "Base URL of your Overseerr server, e.g. https://overseerr.example.com. No trailing slash.",
+      "sensitive": true
+    },
+    "overseerr_api_key": {
+      "type": "string",
+      "title": "Overseerr API Key",
+      "description": "Overseerr API key. Found in Overseerr Settings → General → API Key.",
+      "sensitive": true
+    }
+  }
+}

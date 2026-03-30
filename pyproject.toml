@@ -1,18 +1,17 @@
 [project]
-name = "yarr-mcp"
-version = "0.1.0"
-description = "A collection of MCP servers for the ARRs"
+name = "overseerr-mcp"
+version = "1.0.0"
+description = "FastMCP server for Overseerr media requests"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi>=0.115.12",
     "fastmcp>=2.3.4",
     "httpx>=0.28.1",
     "python-dotenv>=1.1.0",
 ]
 
 [project.scripts]
-plex-mcp-server = "plex_mcp.server:main"
+overseerr-mcp-server = "overseerr_mcp.server:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

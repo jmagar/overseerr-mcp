@@ -11,7 +11,12 @@ wheels/
 .venv-backend
 .env
 .env.*
+!.env.example
 *.log
+logs/*
+!logs/.gitkeep
+backups/*
+!backups/.gitkeep
 
 .bivvy
 .cursor
