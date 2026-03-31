@@ -20,7 +20,13 @@ backups/*
 
 .bivvy
 .cursor
+.lavra/
+.omc/
+.cache/
 
+*.db
+*.db-shm
+*.db-wal
 
 web-ui/frontend/node_modules
 web-ui/backend/.venv-backend/
