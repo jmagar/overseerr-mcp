@@ -1,10 +1,21 @@
 {
   "name": "overseerr-mcp",
   "version": "1.0.0",
-  "description": "Overseerr media request management via MCP",
-  "interface": {
-    "type": "mcp",
-    "transport": "http",
-    "url": "http://localhost:8083/mcp"
+  "description": "Overseerr media requests via MCP",
+  "author": {
+    "name": "Jacob Magar"
+  },
+  "homepage": "https://github.com/jmagar/overseerr-mcp",
+  "repository": "https://github.com/jmagar/overseerr-mcp",
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": {
+    "overseerr-mcp": {
+      "type": "http",
+      "url": "${user_config.overseerr_mcp_url}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.overseerr_mcp_token}"
+      }
+    }
   }
 }

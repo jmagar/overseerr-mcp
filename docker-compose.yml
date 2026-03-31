@@ -1,30 +1,33 @@
+networks:
+  mcp-net:
+    name: ${DOCKER_NETWORK:-mcp-net}
+    external: true
+
 services:
   overseerr-mcp:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: overseerr-mcp
-    labels:
-      - com.centurylinklabs.watchtower.enable=false
-    ports:
-      - ${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}
-    env_file:
-      - .env
-    volumes:
-      - ${APPDATA_PATH}/overseerr-mcp/logs:/app/logs
     restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${OVERSEERR_MCP_PORT:-9151}:9151"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ${APPDATA_PATH:-./data}/overseerr-mcp/logs:/app/logs
+    networks:
+      - mcp-net
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "1"
     healthcheck:
-      test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:9151/health
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9151/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-    networks:
-      - jakenet
-networks:
-  jakenet:
-    external: true

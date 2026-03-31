@@ -5,6 +5,7 @@
   "author": {
     "name": "Jacob Magar"
   },
+  "homepage": "https://github.com/jmagar/overseerr-mcp",
   "repository": "https://github.com/jmagar/overseerr-mcp",
   "license": "MIT",
   "keywords": ["overseerr", "media", "requests", "plex", "mcp"],
@@ -12,9 +13,15 @@
     "overseerr_mcp_url": {
       "type": "string",
       "title": "Overseerr MCP Server URL",
-      "description": "URL of the overseerr-mcp MCP server. Default http://localhost:6975 works if running via docker compose in this repo. Change if running on a different host or port.",
-      "default": "http://localhost:6975",
+      "description": "URL of the overseerr-mcp MCP server (e.g. http://overseerr-mcp:9151).",
+      "default": "http://localhost:9151",
       "sensitive": false
+    },
+    "overseerr_mcp_token": {
+      "type": "string",
+      "title": "MCP Server Bearer Token",
+      "description": "Bearer token for authenticating with the MCP server. Must match OVERSEERR_MCP_TOKEN in the server's .env. Generate with: openssl rand -hex 32",
+      "sensitive": true
     },
     "overseerr_url": {
       "type": "string",
