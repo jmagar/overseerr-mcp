@@ -14,7 +14,7 @@ services:
     ports:
       - "${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}"
     env_file:
-      - path: .env
+      - path: ~/.claude-homelab/.env
         required: false
     volumes:
       - ${APPDATA_PATH:-./data}/overseerr-mcp/logs:/app/logs
