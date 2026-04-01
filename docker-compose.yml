@@ -1,7 +1,7 @@
 networks:
-  mcp-net:
-    name: ${DOCKER_NETWORK:-mcp-net}
-    external: true  # pre-create with: docker network create mcp-net
+  jakenet:
+    name: ${DOCKER_NETWORK:-overseerr-mcp}
+    external: true
 
 services:
   overseerr-mcp:
@@ -19,7 +19,7 @@ services:
     volumes:
       - ${APPDATA_PATH:-./data}/overseerr-mcp/logs:/app/logs
     networks:
-      - mcp-net
+      - jakenet
     deploy:
       resources:
         limits:

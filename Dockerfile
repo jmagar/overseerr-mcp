@@ -26,6 +26,7 @@ EXPOSE 9151
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD wget -qO- http://localhost:9151/health || exit 1
 
+ENV PATH="/app/.venv/bin:$PATH"
 ENV OVERSEERR_MCP_HOST=0.0.0.0
 ENV OVERSEERR_MCP_PORT=9151
 ENV OVERSEERR_MCP_TRANSPORT=http
