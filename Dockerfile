@@ -9,10 +9,11 @@ RUN groupadd --gid 1000 mcpuser && \
 
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml uv.lock* README.md ./
-RUN uv sync --frozen --no-dev
+COPY pyproject.toml uv.lock* ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
+RUN uv sync --frozen --no-dev
 
 RUN chmod +x entrypoint.sh && \
     mkdir -p /app/logs /app/backups && \
