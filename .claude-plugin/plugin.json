@@ -8,13 +8,19 @@
   "homepage": "https://github.com/jmagar/overseerr-mcp",
   "repository": "https://github.com/jmagar/overseerr-mcp",
   "license": "MIT",
-  "keywords": ["overseerr", "media", "requests", "plex", "mcp"],
+  "keywords": [
+    "overseerr",
+    "media",
+    "requests",
+    "plex",
+    "mcp"
+  ],
   "userConfig": {
     "overseerr_mcp_url": {
       "type": "string",
       "title": "Overseerr MCP Server URL",
       "description": "URL of the overseerr-mcp MCP server (e.g. http://overseerr-mcp:9151).",
-      "default": "http://localhost:9151",
+      "default": "https://overseerr.tootie.tv/mcp",
       "sensitive": false
     },
     "overseerr_mcp_token": {
@@ -32,7 +38,7 @@
     "overseerr_api_key": {
       "type": "string",
       "title": "Overseerr API Key",
-      "description": "Overseerr API key. Found in Overseerr Settings → General → API Key.",
+      "description": "Overseerr API key. Found in Overseerr Settings \u2192 General \u2192 API Key.",
       "sensitive": true
     }
   }

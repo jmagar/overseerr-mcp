@@ -2,10 +2,7 @@
   "mcpServers": {
     "overseerr-mcp": {
       "type": "http",
-      "url": "${user_config.overseerr_mcp_url}/mcp",
-      "headers": {
-        "Authorization": "Bearer ${user_config.overseerr_mcp_token}"
-      }
+      "url": "${env.OVERSEERR_MCP_URL}"
     }
   }
 }
