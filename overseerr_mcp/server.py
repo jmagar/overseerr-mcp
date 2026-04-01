@@ -346,6 +346,118 @@ async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> 
     return "Error: Received unexpected data structure from Overseerr for failed requests."
 
 
+# --- Tool: overseerr_help ---
+
+_HELP_TEXT = """# Overseerr MCP Server
+
+Interact with an Overseerr instance for media discovery and requests.
+
+## Tools
+
+### `overseerr_help`
+
+Returns this markdown help document.
+
+### `search_media`
+
+Search for movies or TV shows.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | yes | Search term |
+| `media_type` | string | no | `"movie"` or `"tv"` — searches both if omitted |
+
+**Example:**
+```
+search_media(query="Inception", media_type="movie")
+search_media(query="Breaking Bad")
+```
+
+### `get_movie_details`
+
+Retrieve detailed information for a specific movie.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tmdb_id` | int | yes | TMDB integer ID for the movie |
+
+**Example:**
+```
+get_movie_details(tmdb_id=27205)
+```
+
+### `get_tv_show_details`
+
+Retrieve detailed information for a specific TV show (includes seasons).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tmdb_id` | int | yes | TMDB integer ID for the TV show |
+
+**Example:**
+```
+get_tv_show_details(tmdb_id=1396)
+```
+
+### `request_movie`
+
+Request a movie on Overseerr using its TMDB ID.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tmdb_id` | int | yes | TMDB integer ID for the movie to request |
+
+**Example:**
+```
+request_movie(tmdb_id=27205)
+```
+
+### `request_tv_show`
+
+Request a TV show or specific seasons on Overseerr.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tmdb_id` | int | yes | TMDB integer ID for the TV show |
+| `seasons` | list[int] | no | Season numbers to request — omit to request all seasons |
+
+**Example:**
+```
+request_tv_show(tmdb_id=1396)
+request_tv_show(tmdb_id=1396, seasons=[1, 2])
+```
+
+### `list_failed_requests`
+
+List failed media requests from Overseerr.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `count` | int | `10` | Number of requests to retrieve |
+| `skip` | int | `0` | Number of requests to skip (pagination) |
+
+**Example:**
+```
+list_failed_requests(count=20)
+list_failed_requests(count=10, skip=10)
+```
+
+## Typical Workflow
+
+1. Search for content: `search_media(query="Dune")`
+2. Get TMDB ID from results
+3. View details: `get_movie_details(tmdb_id=438631)`
+4. Submit request: `request_movie(tmdb_id=438631)`
+5. Check failures: `list_failed_requests()`
+"""
+
+
+@mcp.tool()
+async def overseerr_help() -> str:
+    """Returns markdown help for all Overseerr MCP tools and parameters."""
+    return _HELP_TEXT
+
+
 # --- Health Endpoint ---
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> JSONResponse:
