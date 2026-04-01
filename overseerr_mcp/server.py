@@ -1,5 +1,6 @@
 """Overseerr MCP Server — FastMCP server for Overseerr media requests."""
 
+import hmac
 import logging
 import os
 import sys
@@ -92,7 +93,9 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer ") or auth_header[len("Bearer ") :] != self._token:
+        if not auth_header.startswith("Bearer ") or not hmac.compare_digest(
+            auth_header[len("Bearer ") :], self._token
+        ):
             logger.warning(f"Unauthorized request to {request.url.path} from {request.client}")
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
