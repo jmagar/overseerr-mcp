@@ -17,5 +17,8 @@
         "Authorization": "Bearer ${user_config.overseerr_mcp_token}"
       }
     }
+  },
+  "interface": {
+    "displayName": "Overseerr MCP"
   }
 }
