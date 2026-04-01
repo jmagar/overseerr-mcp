@@ -2,7 +2,7 @@
   "mcpServers": {
     "overseerr-mcp": {
       "type": "http",
-      "url": "${user_config.overseerr_mcp_url}"
+      "url": "${OVERSEERR_MCP_URL}"
     }
   }
 }
