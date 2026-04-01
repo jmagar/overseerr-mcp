@@ -14,19 +14,19 @@ declare -A MANAGED=(
 
 touch "$ENV_FILE"
 
-if [ -s "$ENV_FILE" ]; then
-  cp "$ENV_FILE" "${BACKUP_DIR}/.env.bak.$(date +%s)"
-fi
-
 (
   flock -x 200
+
+  if [ -s "$ENV_FILE" ]; then
+    cp "$ENV_FILE" "${BACKUP_DIR}/.env.bak.$(date +%s)"
+  fi
 
   for key in "${!MANAGED[@]}"; do
     value="${MANAGED[$key]}"
     [ -z "$value" ] && continue
     if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
       awk -v k="$key" -v v="$value" \
-        'BEGIN{FS="="; OFS="="} $1==k {$2=v; print; next} {print}' \
+        'BEGIN{FS="="} $1==k {$0=k"="v} {print}' \
         "$ENV_FILE" > "${ENV_FILE}.tmp" && mv "${ENV_FILE}.tmp" "$ENV_FILE"
     else
       echo "${key}=${value}" >> "$ENV_FILE"
@@ -43,4 +43,4 @@ fi
     rm -f "$bak"
   done
 
-) 200>/tmp/overseerr-sync-env.lock
+) 200>"${ENV_FILE}.lock"

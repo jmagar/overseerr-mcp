@@ -24,7 +24,5 @@ __pycache__/
 *.py[oc]
 .venv/
 .cache/
-uv.lock
-pyproject.toml
 Justfile
 .pre-commit-config.yaml

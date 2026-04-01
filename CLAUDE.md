@@ -5,8 +5,8 @@ MCP server for Overseerr media request management.
 ## Development
 
 - Language: Python (FastMCP + uv)
-- Port: 8083 (OVERSEERR_MCP_PORT)
-- Auth: Bearer token (OVERSEERR_MCP_TOKEN)
+- Port: 9151 (OVERSEERR_MCP_PORT)
+- Auth: Bearer token (OVERSEERR_MCP_TOKEN) + Overseerr API key (OVERSEERR_API_KEY)
 
 ## Commands
 
