@@ -17,7 +17,8 @@ services:
       - path: ~/.claude-homelab/.env
         required: false
     volumes:
-      - ${APPDATA_PATH:-./data}/overseerr-mcp/logs:/app/logs
+      - ${APPDATA_PATH:-./data}/overseerr-mcp:/app/data
+      - ./logs:/app/logs
     networks:
       - jakenet
     deploy:
