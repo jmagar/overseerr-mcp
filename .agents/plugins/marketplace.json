@@ -1,0 +1,20 @@
+{
+  "name": "overseerr-mcp",
+  "interface": {
+    "displayName": "Overseerr MCP"
+  },
+  "plugins": [
+    {
+      "name": "overseerr-mcp",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Media"
+    }
+  ]
+}
