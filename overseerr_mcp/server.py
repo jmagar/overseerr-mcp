@@ -461,56 +461,7 @@ async def overseerr_help() -> str:
 # --- Health Endpoint ---
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> JSONResponse:
-    logger.info("Health check requested")
-    client: OverseerrApiClient | None = (
-        getattr(request.app, "overseerr_client", None)
-        or getattr(mcp, "overseerr_client", None)
-        or overseerr_client
-    )
-
-    if not OVERSEERR_URL or not OVERSEERR_API_KEY:
-        return JSONResponse(
-            {
-                "status": "error",
-                "service_accessible": False,
-                "reason": "OVERSEERR_URL or OVERSEERR_API_KEY not configured",
-            },
-            status_code=500,
-        )
-
-    if not client:
-        return JSONResponse(
-            {
-                "status": "error",
-                "service_accessible": False,
-                "reason": "Overseerr client not initialized",
-            },
-            status_code=503,
-        )
-
-    try:
-        response = await client.get("/settings/main")
-        if isinstance(response, dict):
-            return JSONResponse(
-                {
-                    "status": "ok",
-                    "service_accessible": True,
-                    "details": {
-                        "app_title": response.get("applicationTitle", "Overseerr"),
-                        "app_url": response.get("applicationUrl", "N/A"),
-                    },
-                }
-            )
-        return JSONResponse(
-            {"status": "error", "service_accessible": False, "reason": f"API error: {response}"},
-            status_code=503,
-        )
-    except Exception as e:
-        logger.exception("Unexpected exception during health check")
-        return JSONResponse(
-            {"status": "error", "service_accessible": False, "reason": str(e)},
-            status_code=500,
-        )
+    return JSONResponse({"status": "ok"})
 
 
 def main() -> None:

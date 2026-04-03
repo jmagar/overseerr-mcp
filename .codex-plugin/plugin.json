@@ -1,24 +1,43 @@
 {
   "name": "overseerr-mcp",
   "version": "1.0.0",
-  "description": "Overseerr media requests via MCP",
-  "author": {
-    "name": "Jacob Magar"
-  },
+  "description": "Overseerr media requests via MCP.",
   "homepage": "https://github.com/jmagar/overseerr-mcp",
   "repository": "https://github.com/jmagar/overseerr-mcp",
   "license": "MIT",
+  "keywords": [
+    "overseerr",
+    "media",
+    "requests",
+    "plex",
+    "mcp"
+  ],
   "skills": "./skills/",
-  "mcpServers": {
-    "overseerr-mcp": {
-      "type": "http",
-      "url": "${user_config.overseerr_mcp_url}/mcp",
-      "headers": {
-        "Authorization": "Bearer ${user_config.overseerr_mcp_token}"
-      }
-    }
-  },
+  "mcpServers": "./.mcp.json",
+  "apps": "./.app.json",
   "interface": {
-    "displayName": "Overseerr MCP"
+    "displayName": "Overseerr MCP",
+    "shortDescription": "Search media and submit Overseerr requests",
+    "longDescription": "Search movies and TV shows, inspect details, and submit or review Overseerr media requests through MCP tools and bundled skills.",
+    "developerName": "Jacob Magar",
+    "category": "Media",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/jmagar/overseerr-mcp",
+    "defaultPrompt": [
+      "Search Overseerr for a movie.",
+      "Request a TV show in Overseerr.",
+      "Check failed Overseerr requests."
+    ],
+    "brandColor": "#F59E0B",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.svg"
+  },
+  "author": {
+    "name": "Jacob Magar",
+    "email": "jmagar@users.noreply.github.com",
+    "url": "https://github.com/jmagar"
   }
 }
