@@ -1,0 +1,26 @@
+{
+  "name": "overseerr-mcp",
+  "version": "1.0.0",
+  "description": "Overseerr media request management via MCP tools. Search movies and TV shows, submit requests, and monitor failed requests.",
+  "mcpServers": {
+    "overseerr-mcp": {
+      "command": "uv",
+      "args": ["run", "overseerr-mcp-server"],
+      "cwd": "${extensionPath}"
+    }
+  },
+  "settings": [
+    {
+      "name": "Overseerr URL",
+      "description": "URL of your Overseerr instance (e.g., https://overseerr.example.com)",
+      "envVar": "OVERSEERR_URL",
+      "sensitive": false
+    },
+    {
+      "name": "Overseerr API Key",
+      "description": "API key from Overseerr Settings > General",
+      "envVar": "OVERSEERR_API_KEY",
+      "sensitive": true
+    }
+  ]
+}
