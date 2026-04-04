@@ -26,7 +26,6 @@ cache-dir = ".cache/ruff"
 select = ["E", "F", "I", "UP"]
 
 [tool.ty]
-cache-dir = ".cache/ty"
 
 [dependency-groups]
-dev = ["ruff>=0.9", "ty>=0.0.1a3", "pre-commit>=4.0"]
+dev = ["ruff>=0.9", "ty>=0.0.1a3", "pre-commit>=4.0", "pytest>=8.0", "pytest-asyncio>=0.23"]

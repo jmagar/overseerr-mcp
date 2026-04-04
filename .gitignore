@@ -4,8 +4,10 @@
 !.env.example
 
 # ── Runtime artifacts ────────────────────────────────────────────────────────
-logs/
-backups/
+logs/*
+!logs/.gitkeep
+backups/*
+!backups/.gitkeep
 *.log
 *.pid
 *.bak
@@ -23,7 +25,7 @@ backups/
 *.db-wal
 .beads-credential-key
 .serena/
-.worktrees/
+.worktrees
 .full-review/
 .full-review-archive-*
 .bivvy
