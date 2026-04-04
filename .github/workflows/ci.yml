@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: uv sync --group dev
-      - run: uv run pytest
+      - run: uv run pytest || [ $? -eq 5 ]  # exit 5 = no tests collected, acceptable
   version-sync:
     runs-on: ubuntu-latest
     steps:

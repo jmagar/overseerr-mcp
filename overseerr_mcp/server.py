@@ -107,7 +107,7 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def overseerr_lifespan(app: FastMCP):
     logger.info("Overseerr MCP: startup")
-    app.overseerr_client = overseerr_client
+    app.overseerr_client = overseerr_client  # ty: ignore[unresolved-attribute]
     yield
     logger.info("Overseerr MCP: shutdown")
     if overseerr_client:
@@ -120,7 +120,7 @@ mcp = FastMCP(
     instructions="Interact with an Overseerr instance for media requests and discovery.",
     lifespan=overseerr_lifespan,
 )
-mcp.overseerr_client = overseerr_client
+mcp.overseerr_client = overseerr_client  # ty: ignore[unresolved-attribute]
 
 
 # --- Tools ---

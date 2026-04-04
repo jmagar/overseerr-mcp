@@ -47,5 +47,5 @@ biome.json
 .pre-commit-config.yaml
 .prettierrc
 .prettierignore
-tests/
+tests
 
