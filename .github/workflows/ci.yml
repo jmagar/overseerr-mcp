@@ -59,102 +59,12 @@ jobs:
     name: MCP Integration Tests
     runs-on: ubuntu-latest
     needs: [lint, typecheck, test]
-    # Skip on forks — secrets not available
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    env:
-      PORT: 9151
-      TOKEN: ci-integration-token
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-
-      # ── Mode 1: Docker HTTP ──────────────────────────────────────
-      - name: Build Docker image
-        run: docker build -t overseerr-mcp-ci .
-
-      - name: Start container (Docker HTTP)
-        run: |
-          docker run -d --name overseerr-mcp-ci-docker \
-            -p ${{ env.PORT }}:${{ env.PORT }} \
-            -e OVERSEERR_URL="${{ secrets.OVERSEERR_URL }}" \
-            -e OVERSEERR_API_KEY="${{ secrets.OVERSEERR_API_KEY }}" \
-            -e OVERSEERR_MCP_TOKEN="${{ env.TOKEN }}" \
-            -e OVERSEERR_MCP_TRANSPORT=http \
-            -e OVERSEERR_MCP_PORT=${{ env.PORT }} \
-            overseerr-mcp-ci
-
-      - name: Wait for health (Docker)
-        run: |
-          for i in $(seq 1 30); do
-            curl -sf -H 'Accept: application/json, text/event-stream' \
-              http://localhost:${{ env.PORT }}/health && break
-            echo "  attempt $i/30…"; sleep 1
-          done
-
-      - name: Run tests (Docker HTTP)
-        run: bash tests/ci-test-tools.sh --url http://localhost:${{ env.PORT }} --token ${{ env.TOKEN }}
-
-      - name: Stop container
-        if: always()
-        run: docker rm -f overseerr-mcp-ci-docker || true
-
-      # ── Mode 2: Local HTTP (uvx) ─────────────────────────────────
-      - name: Start server via uvx (local HTTP)
+      - name: Run integration tests
         env:
           OVERSEERR_URL: ${{ secrets.OVERSEERR_URL }}
           OVERSEERR_API_KEY: ${{ secrets.OVERSEERR_API_KEY }}
-          OVERSEERR_MCP_TRANSPORT: http
-          OVERSEERR_MCP_PORT: ${{ env.PORT }}
-          OVERSEERR_MCP_TOKEN: ${{ env.TOKEN }}
-        run: |
-          uvx --from . overseerr-mcp-server &
-          echo "UVX_PID=$!" >> "$GITHUB_ENV"
-
-      - name: Wait for health (uvx HTTP)
-        run: |
-          for i in $(seq 1 30); do
-            curl -sf -H 'Accept: application/json, text/event-stream' \
-              http://localhost:${{ env.PORT }}/health && break
-            echo "  attempt $i/30…"; sleep 1
-          done
-
-      - name: Run tests (uvx HTTP)
-        run: bash tests/ci-test-tools.sh --url http://localhost:${{ env.PORT }} --token ${{ env.TOKEN }}
-
-      - name: Stop uvx server
-        if: always()
-        run: kill "$UVX_PID" 2>/dev/null || true
-
-      # ── Mode 3: stdio (uvx via mcporter) ────────────────────────
-      - name: Run tests (uvx stdio)
-        env:
-          OVERSEERR_URL: ${{ secrets.OVERSEERR_URL }}
-          OVERSEERR_API_KEY: ${{ secrets.OVERSEERR_API_KEY }}
-        run: |
-          REPO_DIR="$GITHUB_WORKSPACE"
-          CFG=$(mktemp /tmp/mcporter-stdio-XXXXXX.json)
-          trap 'rm -f "$CFG"' EXIT
-          # Use --directory so uvx resolves pyproject.toml from the repo root
-          cat > "$CFG" <<JSON
-          {
-            "mcpServers": {
-              "overseerr-mcp": {
-                "command": "uvx",
-                "args": ["--directory", "$REPO_DIR", "--from", ".", "overseerr-mcp-server"],
-                "env": {
-                  "OVERSEERR_URL": "$OVERSEERR_URL",
-                  "OVERSEERR_API_KEY": "$OVERSEERR_API_KEY",
-                  "OVERSEERR_MCP_TRANSPORT": "stdio"
-                }
-              }
-            }
-          }
-          JSON
-          # mcporter list does not take --server for stdio configs
-          npx -y mcporter@latest list --config "$CFG"
-          npx -y mcporter@latest call \
-            --config "$CFG" --server overseerr-mcp \
-            --tool overseerr_help --args '{}'
-          npx -y mcporter@latest call \
-            --config "$CFG" --server overseerr-mcp \
-            --tool search_media --args '{"query":"The Matrix","media_type":"movie"}'
+        run: bash tests/test_live.sh
