@@ -56,7 +56,8 @@ file_handler = RotatingFileHandler(
 file_handler.setLevel(NUMERIC_LOG_LEVEL)
 file_handler.setFormatter(
     logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s"
+        " - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
     )
 )
 if not any(isinstance(h, RotatingFileHandler) for h in logger.handlers):
@@ -294,7 +295,8 @@ async def request_tv_show(
         and api_response["media"].get("tmdbId") == tmdb_id
     ):
         logger.info(
-            f"TV show TMDB ID {tmdb_id} requested (seasons: {payload['seasons']}). Request ID: {api_response['id']}"
+            f"TV show TMDB ID {tmdb_id} requested (seasons: {payload['seasons']})."
+            f" Request ID: {api_response['id']}"
         )
         return api_response
 
@@ -467,7 +469,8 @@ async def health_check(request: Request) -> JSONResponse:
 def main() -> None:
     """Entry point for the Overseerr MCP server."""
     logger.info(
-        f"Starting Overseerr MCP Server — transport: {OVERSEERR_MCP_TRANSPORT}, port: {OVERSEERR_MCP_PORT}"
+        f"Starting Overseerr MCP Server — transport: {OVERSEERR_MCP_TRANSPORT},"
+        f" port: {OVERSEERR_MCP_PORT}"
     )
 
     if OVERSEERR_MCP_TRANSPORT == "stdio":
@@ -479,7 +482,8 @@ def main() -> None:
             logger.info("BearerAuthMiddleware enabled")
         else:
             logger.warning(
-                "Bearer auth disabled — set OVERSEERR_MCP_TOKEN to enable request-level authentication"
+                "Bearer auth disabled — set OVERSEERR_MCP_TOKEN"
+                " to enable request-level authentication"
             )
         import uvicorn
 
