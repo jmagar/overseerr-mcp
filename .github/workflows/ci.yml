@@ -131,14 +131,16 @@ jobs:
           OVERSEERR_URL: ${{ secrets.OVERSEERR_URL }}
           OVERSEERR_API_KEY: ${{ secrets.OVERSEERR_API_KEY }}
         run: |
+          REPO_DIR="$GITHUB_WORKSPACE"
           CFG=$(mktemp /tmp/mcporter-stdio-XXXXXX.json)
           trap 'rm -f "$CFG"' EXIT
+          # Use --directory so uvx resolves pyproject.toml from the repo root
           cat > "$CFG" <<JSON
           {
             "mcpServers": {
               "overseerr-mcp": {
                 "command": "uvx",
-                "args": ["--from", ".", "overseerr-mcp-server"],
+                "args": ["--directory", "$REPO_DIR", "--from", ".", "overseerr-mcp-server"],
                 "env": {
                   "OVERSEERR_URL": "$OVERSEERR_URL",
                   "OVERSEERR_API_KEY": "$OVERSEERR_API_KEY",
@@ -148,7 +150,8 @@ jobs:
             }
           }
           JSON
-          npx -y mcporter@latest list --config "$CFG" --server overseerr-mcp
+          # mcporter list does not take --server for stdio configs
+          npx -y mcporter@latest list --config "$CFG"
           npx -y mcporter@latest call \
             --config "$CFG" --server overseerr-mcp \
             --tool overseerr_help --args '{}'
