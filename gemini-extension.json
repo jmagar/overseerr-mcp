@@ -1,11 +1,14 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Overseerr media request management via MCP tools. Search movies and TV shows, submit requests, and monitor failed requests.",
   "mcpServers": {
     "overseerr-mcp": {
       "command": "uv",
-      "args": ["run", "overseerr-mcp-server"],
+      "args": [
+        "run",
+        "overseerr-mcp-server"
+      ],
       "cwd": "${extensionPath}"
     }
   },

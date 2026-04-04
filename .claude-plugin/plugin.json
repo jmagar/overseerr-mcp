@@ -1,6 +1,6 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Overseerr media requests via MCP tools with HTTP fallback. Search movies and TV shows, submit requests, and monitor failed requests.",
   "author": {
     "name": "Jacob Magar"
@@ -38,7 +38,7 @@
     "overseerr_api_key": {
       "type": "string",
       "title": "Overseerr API Key",
-      "description": "Overseerr API key. Found in Overseerr Settings \u2192 General \u2192 API Key.",
+      "description": "Overseerr API key. Found in Overseerr Settings → General → API Key.",
       "sensitive": true
     }
   }
