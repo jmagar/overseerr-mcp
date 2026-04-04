@@ -33,7 +33,7 @@ if [[ -z "$URL" || -z "$TOKEN" ]]; then
   exit 2
 fi
 
-# Write a temp mcporter config pointing at the running HTTP server
+# mcporter HTTP config — URL must include the /mcp path
 CFG=$(mktemp /tmp/mcporter-http-XXXXXX.json)
 trap 'rm -f "$CFG"' EXIT
 
@@ -41,7 +41,7 @@ cat > "$CFG" <<JSON
 {
   "mcpServers": {
     "overseerr-mcp": {
-      "url": "${URL}",
+      "url": "${URL}/mcp",
       "headers": {
         "Authorization": "Bearer ${TOKEN}",
         "Accept": "application/json, text/event-stream"
@@ -55,7 +55,7 @@ PASS=0
 FAIL=0
 FAILS=()
 
-run() {
+call() {
   local label="$1"; shift
   echo -n "  $label ... "
   local out
@@ -67,20 +67,27 @@ run() {
     PASS=$((PASS + 1))
   else
     echo "FAIL"
-    echo "    output: $out"
+    echo "    $out"
     FAIL=$((FAIL + 1))
     FAILS+=("$label")
   fi
 }
 
 echo ""
-echo "── overseerr-mcp HTTP integration tests ($URL) ──"
+echo "── overseerr-mcp HTTP integration tests (${URL}/mcp) ──"
 
-run "list tools"         --tool-list
-run "help"               --tool overseerr_help --args '{}'
-run "search movie"       --tool search_media   --args '{"query":"The Matrix","media_type":"movie"}'
-run "search tv"          --tool search_media   --args '{"query":"Breaking Bad","media_type":"tv"}'
-run "list failed reqs"   --tool list_failed_requests --args '{"count":5}'
+# List available tools (uses mcporter list, not call)
+echo -n "  list tools ... "
+if npx -y mcporter@latest list --config "$CFG" --server overseerr-mcp > /dev/null 2>&1; then
+  echo "PASS"; PASS=$((PASS + 1))
+else
+  echo "FAIL"; FAIL=$((FAIL + 1)); FAILS+=("list tools")
+fi
+
+call "help"             --tool overseerr_help        --args '{}'
+call "search movie"     --tool search_media          --args '{"query":"The Matrix","media_type":"movie"}'
+call "search tv"        --tool search_media          --args '{"query":"Breaking Bad","media_type":"tv"}'
+call "list failed reqs" --tool list_failed_requests  --args '{"count":5}'
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
