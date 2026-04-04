@@ -1,5 +1,7 @@
 # Overseerr MCP
 
+<!-- mcp-name: tv.tootie/overseerr-mcp -->
+
 [![PyPI](https://img.shields.io/pypi/v/overseerr-mcp)](https://pypi.org/project/overseerr-mcp/) [![ghcr.io](https://img.shields.io/badge/ghcr.io-jmagar%2Foverseerr--mcp-blue?logo=docker)](https://github.com/jmagar/overseerr-mcp/pkgs/container/overseerr-mcp)
 
 MCP server for searching Overseerr media, retrieving TMDB-backed details, and submitting movie or TV requests from Claude, Codex, or any MCP client.

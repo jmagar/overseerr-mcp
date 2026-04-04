@@ -1,0 +1,37 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "tv.tootie/overseerr-mcp",
+  "title": "Overseerr MCP",
+  "description": "MCP server for Overseerr media requests and discovery.",
+  "repository": {
+    "url": "https://github.com/jmagar/overseerr-mcp",
+    "source": "github"
+  },
+  "version": "1.0.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "overseerr-mcp",
+      "version": "1.0.1",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "OVERSEERR_URL",
+          "description": "Base URL of your Overseerr instance, e.g. https://overseerr.example.com.",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "OVERSEERR_API_KEY",
+          "description": "Overseerr API key (Settings > General > API Key).",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
