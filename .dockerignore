@@ -49,3 +49,4 @@ biome.json
 .prettierignore
 tests
 
+.claude
