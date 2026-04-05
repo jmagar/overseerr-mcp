@@ -1,6 +1,6 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Overseerr media requests via MCP tools with HTTP fallback. Search movies and TV shows, submit requests, and monitor failed requests.",
   "author": {
     "name": "Jacob Magar"

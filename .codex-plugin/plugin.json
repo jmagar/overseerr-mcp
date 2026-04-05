@@ -1,6 +1,6 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Overseerr media requests via MCP.",
   "homepage": "https://github.com/jmagar/overseerr-mcp",
   "repository": "https://github.com/jmagar/overseerr-mcp",
