@@ -82,4 +82,4 @@ All hook scripts must be executable:
 chmod +x hooks/scripts/*.sh
 ```
 
-The `lint-plugin.sh` contract check verifies this.
+Ensure hook scripts have executable permissions.

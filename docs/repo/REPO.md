@@ -21,7 +21,6 @@ overseerr-mcp/
 │       └── ensure-ignore-files.sh # Verify .gitignore + .dockerignore
 │
 ├── scripts/                     # CI and maintenance scripts
-│   ├── lint-plugin.sh           # Plugin contract linter
 │   ├── smoke-test.sh            # mcporter smoke test
 │   ├── check-docker-security.sh # Dockerfile security audit
 │   ├── check-no-baked-env.sh    # Baked env var check

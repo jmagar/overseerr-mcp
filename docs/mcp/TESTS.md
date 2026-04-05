@@ -7,7 +7,6 @@
 | Unit | pytest | `tests/` | (Planned) Individual function behavior |
 | Integration | test_live.sh | `tests/test_live.sh` | Full MCP stack: auth, protocol, tools |
 | Smoke | smoke-test.sh | `scripts/smoke-test.sh` | Quick verification via mcporter |
-| Contract | lint-plugin.sh | `scripts/lint-plugin.sh` | Plugin structure and conventions |
 
 ## Running tests
 
@@ -71,15 +70,6 @@ bash scripts/smoke-test.sh [--url http://host:9151/mcp]
 ```
 
 Tests all 7 tools. Destructive tools are skipped.
-
-## Contract checks
-
-```bash
-just check-contract
-# or: bash scripts/lint-plugin.sh
-```
-
-Validates 17 checks across manifests, userConfig, version sync, env naming, tool pair, required files, symlinks, skills, hooks, hook permissions, compose, secrets, directories, and assets.
 
 ## Adding new tests
 

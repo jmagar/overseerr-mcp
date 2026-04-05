@@ -96,7 +96,6 @@ Complete listing of all plugin components.
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/lint-plugin.sh` | Comprehensive plugin contract linter (17 checks) |
 | `scripts/smoke-test.sh` | Live smoke test via mcporter against running server |
 | `scripts/check-docker-security.sh` | Dockerfile security checks (multi-stage, non-root, no secrets, healthcheck) |
 | `scripts/check-no-baked-env.sh` | Verify no env vars baked into Docker artifacts |

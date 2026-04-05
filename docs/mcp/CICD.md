@@ -12,7 +12,6 @@
 | `typecheck` | ubuntu-latest | `uv sync --group dev`, `ty check` |
 | `test` | ubuntu-latest | `uv sync --group dev`, `pytest` (exit 5 accepted) |
 | `version-sync` | ubuntu-latest | `check-outdated-deps.sh` (non-blocking) |
-| `contract-drift` | ubuntu-latest | `lint-plugin.sh` |
 | `docker-security` | ubuntu-latest | `check-docker-security.sh`, `check-no-baked-env.sh`, `ensure-ignore-files.sh --check` |
 | `mcp-integration` | ubuntu-latest | `test_live.sh` with secrets (needs lint+typecheck+test; push or same-repo PRs only) |
 

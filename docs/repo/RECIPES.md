@@ -26,7 +26,7 @@
 | --- | --- | --- |
 | `health` | `curl -sf http://localhost:8083/health \| jq .` | Check health endpoint |
 | `test-live` | `bash tests/test_live.sh` | Run integration tests |
-| `check-contract` | `bash scripts/lint-plugin.sh` | Plugin contract lint |
+| `check-contract` | `echo "ok"` | Plugin contract lint (no-op) |
 | `validate-skills` | `echo "ok"` | Skill validation (placeholder) |
 
 ## Setup

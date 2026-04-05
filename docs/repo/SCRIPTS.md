@@ -2,32 +2,6 @@
 
 ## scripts/
 
-### lint-plugin.sh
-
-Comprehensive plugin contract linter. Validates 17 checks:
-
-1. Manifest files exist (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.mcp.json`, `.app.json`)
-2. Required plugin.json fields (name, version, description, author, repository, license, keywords, userConfig)
-3. userConfig field validation (type, title, description, sensitive for each key)
-4. Codex manifest interface object
-5. Version sync across all manifests
-6. No generic env var names (all must be `OVERSEERR_` prefixed)
-7. Tool pair (domain tool + help tool present in source)
-8. Required files (CLAUDE.md, AGENTS.md, GEMINI.md, README.md, etc.)
-9. Symlinks (AGENTS.md, GEMINI.md point to CLAUDE.md)
-10. Skills (at least one SKILL.md in skills/)
-11. Hooks (hooks.json, sync-env.sh, fix-env-perms.sh, ensure-ignore-files.sh)
-12. Hook scripts executable
-13. docker-compose.yaml checks (env_file, user, no environment block)
-14. (reserved)
-15. No committed secrets (.env not tracked)
-16. Required directories (backups, logs, tests, skills)
-17. Assets directory with icon files
-
-```bash
-bash scripts/lint-plugin.sh [project-dir]
-```
-
 ### smoke-test.sh
 
 End-to-end smoke test via mcporter. Tests all 7 tools against a running server, skipping destructive tools.
