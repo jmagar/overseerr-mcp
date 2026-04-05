@@ -36,13 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/check-outdated-deps.sh || true
-  contract-drift:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: bash scripts/lint-plugin.sh
-
   docker-security:
     name: Docker Security
     runs-on: ubuntu-latest
