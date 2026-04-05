@@ -134,8 +134,10 @@ mcp_post() {
   rm -f "$header_file"
 
   HTTP_STATUS="$(printf '%s' "$raw" | grep -o '__STATUS__[0-9]*' | tail -1 | sed 's/__STATUS__//')"
-  # Strip the status line and strip SSE "data: " prefix if present
-  HTTP_BODY="$(printf '%s' "$raw" | sed '/^__STATUS__/d' | sed 's/^data: //')"
+  # Strip the status line, SSE "event:" lines, and SSE "data: " prefix from first data line.
+  # FastMCP 3.x sends SSE events where tool descriptions may contain embedded newlines,
+  # so the JSON payload spans multiple lines — strip only event: metadata lines, not blank lines.
+  HTTP_BODY="$(printf '%s' "$raw" | sed '/^__STATUS__/d' | sed '/^event:/d' | sed '1s/^data: //')"
 
   if [[ "$VERBOSE" == true ]]; then
     printf '[verbose] POST %s → %s\n%s\n' "$path" "$HTTP_STATUS" "$HTTP_BODY" | tee -a "$LOG_FILE"
@@ -509,9 +511,9 @@ run_stdio_mode() {
   command -v npx &>/dev/null || { log_err "npx not found in PATH (Node.js required for stdio mode)"; exit 2; }
   command -v uvx &>/dev/null || { log_err "uvx not found in PATH (install uv)"; exit 2; }
 
-  local cfg
+  local cfg=""
   cfg="$(mktemp /tmp/mcporter-stdio-XXXXXX.json)"
-  trap 'rm -f "$cfg"' RETURN
+  trap '[[ -n "${cfg:-}" ]] && rm -f "$cfg"' RETURN
 
   cat > "$cfg" <<JSON
 {
