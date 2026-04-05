@@ -1,8 +1,15 @@
 {
   "mcpServers": {
     "overseerr-mcp": {
-      "type": "http",
-      "url": "${OVERSEERR_MCP_URL}"
+      "command": "uv",
+      "args": [
+        "run",
+        "overseerr-mcp-server"
+      ],
+      "cwd": "./",
+      "env": {
+        "OVERSEERR_MCP_TRANSPORT": "stdio"
+      }
     }
   }
 }
