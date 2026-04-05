@@ -1,7 +1,6 @@
 import logging
 import os
 from typing import Any
-from urllib.parse import quote_plus
 
 import httpx
 
@@ -39,31 +38,15 @@ class OverseerrApiClient:
     ) -> dict | list | str:
         url = f"{self.base_url}{endpoint}"
 
-        encoded_params = None
         if params:
-            encoded_params = {}
-            for key, value in params.items():
-                if isinstance(value, str):
-                    encoded_params[key] = quote_plus(value)
-                elif isinstance(value, (list, tuple)):
-                    # Handle list params if Overseerr API uses them (e.g. for tags, not query)
-                    # For now, assuming simple key=value for query, take, skip etc.
-                    encoded_params[key] = [
-                        quote_plus(str(v)) if isinstance(v, str) else v for v in value
-                    ]
-                else:
-                    encoded_params[key] = value
             log.debug(
-                f"Overseerr API Request (params URL encoded): {method} {url}"
-                f" | Params: {encoded_params} | JSON: {json_data}"
+                f"Overseerr API Request: {method} {url} | Params: {params} | JSON: {json_data}"
             )
         else:
             log.debug(f"Overseerr API Request: {method} {url} | JSON: {json_data}")
 
         try:
-            response = await self._client.request(
-                method, url, params=encoded_params, json=json_data
-            )
+            response = await self._client.request(method, url, params=params, json=json_data)
             response.raise_for_status()  # Raises HTTPStatusError for 4xx/5xx responses
 
             # Handle cases where response might be empty
