@@ -107,17 +107,31 @@ log_err()  { printf "${C_RED}[ERROR]${C_RESET} %s\n" "$*" | tee -a "$LOG_FILE" >
 
 # mcp_post <path> <json_body>
 # Sets globals: HTTP_STATUS, HTTP_BODY
+# Captures Mcp-Session-Id from initialize response and reuses it in subsequent calls.
+MCP_SESSION_ID=""
 mcp_post() {
   local path="$1"
   local body="$2"
+  local header_file
+  header_file="$(mktemp /tmp/mcp-headers-XXXXXX)"
   local raw
   raw="$(curl -s -w '\n__STATUS__%{http_code}' \
     -X POST \
     -H "Authorization: Bearer ${TOKEN}" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
+    ${MCP_SESSION_ID:+-H "Mcp-Session-Id: ${MCP_SESSION_ID}"} \
+    -D "$header_file" \
     -d "$body" \
     "${BASE_URL}${path}" 2>>"$LOG_FILE")" || true
+
+  # Capture session ID from response headers (FastMCP 2+/3+ stateful HTTP transport)
+  local new_session
+  new_session="$(grep -i '^mcp-session-id:' "$header_file" | tr -d '\r' | sed 's/^[^:]*: *//')"
+  if [[ -n "$new_session" ]]; then
+    MCP_SESSION_ID="$new_session"
+  fi
+  rm -f "$header_file"
 
   HTTP_STATUS="$(printf '%s' "$raw" | grep -o '__STATUS__[0-9]*' | tail -1 | sed 's/__STATUS__//')"
   # Strip the status line and strip SSE "data: " prefix if present
@@ -422,6 +436,7 @@ phase_tools() {
 # HTTP mode — run all 4 phases
 # ---------------------------------------------------------------------------
 run_http_phases() {
+  MCP_SESSION_ID=""  # Reset for each HTTP mode run
   phase_health
   phase_auth
   phase_protocol
