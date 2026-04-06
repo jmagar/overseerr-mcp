@@ -55,7 +55,7 @@ Complete listing of all plugin components.
 | Skills | yes | `skills/overseerr/SKILL.md` |
 | Agents | no | — |
 | Commands | no | — |
-| Hooks | yes | `hooks/hooks.json`, `hooks/scripts/` |
+| Hooks | yes | `hooks/hooks.json`, `bin/` |
 | Channels | no | — |
 | Output styles | no | — |
 | Schedules | no | — |
@@ -96,12 +96,12 @@ Complete listing of all plugin components.
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/smoke-test.sh` | Live smoke test via mcporter against running server |
-| `scripts/check-docker-security.sh` | Dockerfile security checks (multi-stage, non-root, no secrets, healthcheck) |
-| `scripts/check-no-baked-env.sh` | Verify no env vars baked into Docker artifacts |
-| `scripts/check-outdated-deps.sh` | Report outdated Python dependencies |
-| `scripts/ensure-ignore-files.sh` | Ensure .gitignore and .dockerignore have required patterns |
-| `scripts/setup-data-dirs.sh` | Create data directories with correct ownership |
+| `bin/smoke-test.sh` | Live smoke test via mcporter against running server |
+
+
+
+
+| `bin/setup-data-dirs.sh` | Create data directories with correct ownership |
 
 ## Dependencies
 

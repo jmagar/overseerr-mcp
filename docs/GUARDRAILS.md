@@ -4,14 +4,14 @@ Safety and security patterns enforced across the plugin.
 
 ## Credential management
 
-### Storage
+Storage
 
 - All credentials in `.env` with `chmod 600` permissions
 - Never commit `.env` or any file containing secrets
 - Use `.env.example` as a tracked template with placeholder values only
 - Generate tokens with `openssl rand -hex 32` or `just gen-token`
 
-### Ignore files
+Ignore files
 
 `.gitignore` and `.dockerignore` must include:
 
@@ -23,18 +23,17 @@ backups/*
 logs/*
 ```
 
-### Hook enforcement
+Hook enforcement
 
 Hooks run automatically at session start and after tool use:
 
 | Hook | Trigger | Purpose |
 | --- | --- | --- |
-| `sync-env.sh` | SessionStart | Syncs `userConfig` credentials to `.env` |
-| `ensure-gitignore.sh` | SessionStart, PostToolUse | Verifies `.gitignore` has required patterns |
-| `fix-env-perms.sh` | PostToolUse (Write/Edit/Bash) | Sets `.env` to `chmod 600` if touched |
-| `ensure-ignore-files.sh` | PostToolUse | Checks both `.gitignore` and `.dockerignore` |
+The `sync-uv.sh` hook keeps the repository lockfile and persistent Python environment in sync at session start.
 
-### Credential rotation
+
+
+Credential rotation
 
 1. Generate new token: `just gen-token`
 2. Update `.env` with new value
@@ -52,7 +51,7 @@ Environment gates reserved for future use:
 
 ## Docker security
 
-### Non-root execution
+Non-root execution
 
 The container runs as `mcpuser` (UID/GID 1000):
 
@@ -64,7 +63,7 @@ USER mcpuser
 
 Override with `PUID` and `PGID` in `docker-compose.yml`.
 
-### No baked environment
+No baked environment
 
 Docker images contain no credentials at build time:
 
@@ -75,11 +74,11 @@ Docker images contain no credentials at build time:
 Verify with:
 
 ```bash
-bash scripts/check-no-baked-env.sh
-bash scripts/check-docker-security.sh
+
+
 ```
 
-### Image scanning
+Image scanning
 
 CI runs Trivy vulnerability scanning on every push to main:
 
@@ -91,19 +90,19 @@ CI runs Trivy vulnerability scanning on every push to main:
 
 ## Network security
 
-### HTTPS in production
+HTTPS in production
 
 - `OVERSEERR_URL` should use `https://` in production
 - HTTP is acceptable only for local development
 
-### Bearer token authentication
+Bearer token authentication
 
 - HTTP transport requires `OVERSEERR_MCP_TOKEN` by default
 - Token sent as `Authorization: Bearer <token>` header
 - Timing-safe comparison via `hmac.compare_digest`
 - Disable only behind a trusted reverse proxy (`OVERSEERR_MCP_NO_AUTH=true`)
 
-### Health endpoint
+Health endpoint
 
 - `GET /health` is unauthenticated — required for container liveness probes
 - Returns only `{"status": "ok"}`, never credentials or internal state

@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | Unit | pytest | `tests/` | (Planned) Individual function behavior |
 | Integration | test_live.sh | `tests/test_live.sh` | Full MCP stack: auth, protocol, tools |
-| Smoke | smoke-test.sh | `scripts/smoke-test.sh` | Quick verification via mcporter |
+| Smoke | smoke-test.sh | `bin/smoke-test.sh` | Quick verification via mcporter |
 
 ## Running tests
 
@@ -66,7 +66,7 @@ Only runs on push to main or PRs from the same repository.
 Quick verification against a running server using mcporter:
 
 ```bash
-bash scripts/smoke-test.sh [--url http://host:9151/mcp]
+bash bin/smoke-test.sh [--url http://host:9151/mcp]
 ```
 
 Tests all 7 tools. Destructive tools are skipped.

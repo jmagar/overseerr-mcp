@@ -15,17 +15,17 @@ repos:
         pass_filenames: false
       - id: docker-security
         name: Docker security check
-        entry: bash scripts/check-docker-security.sh
+
         language: system
         pass_filenames: false
       - id: no-baked-env
         name: No baked env vars
-        entry: bash scripts/check-no-baked-env.sh
+
         language: system
         pass_filenames: false
       - id: ensure-ignore-files
         name: Ensure ignore files
-        entry: bash scripts/ensure-ignore-files.sh --check
+
         language: system
         pass_filenames: false
 ```
@@ -74,7 +74,7 @@ pre-commit run --all-files
 Or individually:
 
 ```bash
-bash scripts/check-docker-security.sh
-bash scripts/check-no-baked-env.sh
-bash scripts/ensure-ignore-files.sh --check .
+
+
+
 ```

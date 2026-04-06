@@ -28,7 +28,7 @@ The compose file configures:
 ### Data directories
 
 ```bash
-bash scripts/setup-data-dirs.sh
+bash bin/setup-data-dirs.sh
 ```
 
 Creates `${APPDATA_PATH}/overseerr-mcp/logs` with correct ownership.

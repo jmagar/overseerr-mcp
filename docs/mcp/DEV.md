@@ -32,8 +32,7 @@ overseerr-mcp/
 ├── skills/overseerr/
 │   └── SKILL.md           # Claude-facing skill definition
 ├── hooks/
-│   ├── hooks.json         # Hook triggers (SessionStart, PostToolUse)
-│   └── scripts/           # sync-env.sh, fix-env-perms.sh, ensure-*.sh
+│   └── scripts/           # sync-uv.sh, , ensure-*.sh
 ├── scripts/               # Linting, security, smoke tests
 ├── tests/
 │   ├── test_live.sh       # Integration test suite
@@ -51,7 +50,7 @@ overseerr-mcp/
 
 ## Key modules
 
-### server.py
+server.py
 
 - Loads environment with `python-dotenv`
 - Initializes `OverseerrApiClient`
@@ -60,7 +59,7 @@ overseerr-mcp/
 - `health_check` custom route
 - `main()` dispatches by transport mode
 
-### client.py
+client.py
 
 - `OverseerrApiClient` wraps `httpx.AsyncClient`
 - Base URL: `{OVERSEERR_URL}/api/v1`

@@ -5,14 +5,14 @@ End-to-end verification against a running server.
 ## Location
 
 ```
-scripts/smoke-test.sh
+bin/smoke-test.sh
 ```
 
 ## Usage
 
 ```bash
-bash scripts/smoke-test.sh [--url http://host:9151/mcp]
-bash scripts/smoke-test.sh --config path/to/mcporter.json
+bash bin/smoke-test.sh [--url http://host:9151/mcp]
+bash bin/smoke-test.sh --config path/to/mcporter.json
 ```
 
 ## Requirements

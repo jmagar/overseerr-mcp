@@ -15,17 +15,17 @@ overseerr-mcp/
 ├── hooks/                       # Plugin hooks
 │   ├── hooks.json               # Hook triggers configuration
 │   └── scripts/                 # Hook scripts
-│       ├── sync-env.sh          # Sync userConfig to .env
-│       ├── fix-env-perms.sh     # Enforce .env permissions
-│       ├── ensure-gitignore.sh  # Verify .gitignore patterns
-│       └── ensure-ignore-files.sh # Verify .gitignore + .dockerignore
+The `sync-uv.sh` hook keeps the repository lockfile and persistent Python environment in sync at session start.
+│       ├──      # Enforce .env permissions
+
+
 │
 ├── scripts/                     # CI and maintenance scripts
 │   ├── smoke-test.sh            # mcporter smoke test
-│   ├── check-docker-security.sh # Dockerfile security audit
-│   ├── check-no-baked-env.sh    # Baked env var check
-│   ├── check-outdated-deps.sh   # Dependency freshness check
-│   ├── ensure-ignore-files.sh   # Ignore file enforcement
+
+
+
+
 │   └── setup-data-dirs.sh       # Data directory setup
 │
 ├── tests/
@@ -75,4 +75,4 @@ overseerr-mcp/
 - `AGENTS.md` and `GEMINI.md` are symlinks to `CLAUDE.md`
 - `backups/`, `logs/`, `data/` directories contain `.gitkeep` for tracking
 - `.env` is always gitignored; `.env.example` is tracked
-- All hook and CI scripts are in `hooks/scripts/` and `scripts/` respectively
+- All hook and CI scripts are in `bin/` and `scripts/` respectively

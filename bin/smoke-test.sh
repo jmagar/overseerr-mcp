@@ -5,8 +5,8 @@
 # Exit code 0 = all passed. Exit code 1 = one or more failures.
 #
 # Usage:
-#   bash scripts/smoke-test.sh [--url http://host:9151/mcp]
-#   bash scripts/smoke-test.sh --config path/to/mcporter.json
+#   bash bin/smoke-test.sh [--url http://host:9151/mcp]
+#   bash bin/smoke-test.sh --config path/to/mcporter.json
 #
 # Requirements: mcporter, curl, python3
 
