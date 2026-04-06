@@ -1,5 +1,19 @@
 name: Codex Plugin Quality Gate
 
+# Runs the upstream HOL Codex Plugin Scanner against .codex-plugin/plugin.json.
+#
+# This is COMPLEMENTARY to — not a replacement for — the contract-drift job in ci.yml,
+# which runs scripts/lint-plugin.sh.  The two validators have different scopes:
+#
+#   scripts/lint-plugin.sh      — local structural lint: required files present,
+#                                 required JSON fields in .claude-plugin/plugin.json
+#                                 and .codex-plugin/plugin.json, Docker conventions,
+#                                 version-sync across manifests (fast, no network)
+#
+#   hol-codex-plugin-scanner-action — upstream Codex registry quality gate:
+#                                 semantic/compatibility checks against the Codex
+#                                 marketplace schema (hashgraph-online registry rules)
+
 on:
   push:
     branches: [main]
@@ -18,7 +32,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      # Public action: https://github.com/hashgraph-online/hol-codex-plugin-scanner-action
+      # Pinned to commit b45d6b5 (v1) — verified accessible as of 2026-04-06.
       - name: Codex plugin scanner
+        id: codex_scanner
         uses: hashgraph-online/hol-codex-plugin-scanner-action@b45d6b583afe05819b24edc8e6418c9ad2e1f1d0 # v1
         with:
           plugin_dir: "./.codex-plugin"
