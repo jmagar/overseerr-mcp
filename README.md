@@ -279,12 +279,24 @@ list_failed_requests(count=20)
 
 ## Installation
 
-### Marketplace
+### Claude Code Plugin (recommended)
 
 ```bash
 /plugin marketplace add jmagar/claude-homelab
 /plugin install overseerr-mcp @jmagar-claude-homelab
 ```
+
+Claude Code will prompt for your Overseerr URL and API key. The server runs via stdio — no HTTP setup, no bearer tokens.
+
+### Docker (HTTP)
+
+```bash
+cp .env.example .env
+chmod 600 .env
+docker compose up -d
+```
+
+See [docs/CONFIG.md](docs/CONFIG.md) for the full environment variable reference.
 
 ### Local development
 
@@ -293,52 +305,40 @@ uv sync --dev
 uv run overseerr-mcp-server
 ```
 
-Alternative entrypoint:
-
-```bash
-uv run python -m overseerr_mcp
-```
-
 ## Configuration
+
+### Plugin (stdio)
+
+The plugin uses `${userConfig.*}` interpolation in `.mcp.json`. Only two fields are needed:
+
+| userConfig key | Description |
+| --- | --- |
+| `overseerr_url` | Base URL of your Overseerr instance (e.g. `https://overseerr.example.com`) |
+| `overseerr_api_key` | Overseerr API key (Settings > General > API Key) |
+
+### Docker (HTTP)
 
 Copy `.env.example` to `.env` and fill in required values:
 
 ```bash
 cp .env.example .env
-# or: just setup
+chmod 600 .env
 ```
-
-### Environment variables
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OVERSEERR_URL` | yes | — | Base URL of your Overseerr instance (e.g. `https://overseerr.example.com`) |
-| `OVERSEERR_API_KEY` | yes | — | Overseerr API key (Settings → General → API Key) |
+| `OVERSEERR_URL` | yes | — | Base URL of your Overseerr instance |
+| `OVERSEERR_API_KEY` | yes | — | Overseerr API key (Settings > General > API Key) |
 | `OVERSEERR_MCP_TRANSPORT` | no | `streamable-http` | Transport mode: `streamable-http`, `http`, `stdio`, or `sse` |
-| `OVERSEERR_MCP_HOST` | no | `0.0.0.0` | Host interface to bind (use `0.0.0.0` for Docker) |
+| `OVERSEERR_MCP_HOST` | no | `0.0.0.0` | Host interface to bind |
 | `OVERSEERR_MCP_PORT` | no | `6975` | Port to bind; `.env.example` recommends `9151` |
 | `OVERSEERR_MCP_TOKEN` | no | `""` | Bearer token for MCP endpoint auth; generate with `openssl rand -hex 32` |
 | `OVERSEERR_MCP_NO_AUTH` | no | `false` | Set `true` to disable bearer auth (only if network-level auth is in place) |
-| `OVERSEERR_MCP_ALLOW_DESTRUCTIVE` | no | `false` | Gate for destructive operations (reserved for future use) |
-| `OVERSEERR_MCP_ALLOW_YOLO` | no | `false` | Gate to bypass confirmation prompts (reserved for future use) |
-| `OVERSEERR_LOG_LEVEL` | no | `INFO` | Log verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`. `LOG_LEVEL` is accepted as a fallback. |
+| `OVERSEERR_LOG_LEVEL` | no | `INFO` | Log verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 
 `OVERSEERR_URL` and `OVERSEERR_API_KEY` are required — the server exits at startup if either is missing.
 
-### Transport modes
-
-| Mode | Description | When to use |
-| --- | --- | --- |
-| `streamable-http` | HTTP with streaming (MCP spec default) | Default; use for Claude.ai or any modern MCP client |
-| `http` | Standard HTTP | Use when streaming is unsupported by the client |
-| `stdio` | Standard input/output | Use for local CLI integration (no network port) |
-| `sse` | Server-Sent Events | Use for legacy MCP clients that require SSE |
-
-For HTTP transports, the MCP endpoint is served at `/mcp`. Requests must include `Authorization: Bearer <OVERSEERR_MCP_TOKEN>` unless `OVERSEERR_MCP_NO_AUTH=true`.
-
-For `sse`, the endpoint is served at `/sse`.
-
-### Authentication
+### Authentication (HTTP only)
 
 Generate a token:
 
@@ -347,13 +347,9 @@ just gen-token
 # or: openssl rand -hex 32
 ```
 
-Set `OVERSEERR_MCP_TOKEN` in `.env` to that value. Configure your MCP client to send:
+Set `OVERSEERR_MCP_TOKEN` in `.env` to that value. Configure your MCP client to send `Authorization: Bearer <token>`.
 
-```
-Authorization: Bearer <token>
-```
-
-The `/health` endpoint is always unauthenticated — it is used for Docker healthchecks.
+The `/health` endpoint is always unauthenticated — it is used for Docker healthchecks. Stdio transport does not use bearer auth.
 
 ## Error handling
 

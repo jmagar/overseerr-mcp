@@ -2,14 +2,19 @@
 
 ## userConfig (Claude Code)
 
-Configured when installing the plugin via Claude Code. Values are synced to `.env` by the `sync-env.sh` hook.
+Configured when installing the plugin via Claude Code. Values are interpolated into `.mcp.json` via `${userConfig.*}` references — no sync scripts or `.env` files needed.
 
-| Key | Type | Sensitive | Default | Description |
-| --- | --- | --- | --- | --- |
-| `overseerr_mcp_url` | string | no | `https://overseerr.tootie.tv/mcp` | URL of the MCP server |
-| `overseerr_mcp_token` | string | yes | — | Bearer token for MCP auth |
-| `overseerr_url` | string | yes | — | Overseerr server URL |
-| `overseerr_api_key` | string | yes | — | Overseerr API key |
+| Key | Type | Sensitive | Description |
+| --- | --- | --- | --- |
+| `overseerr_url` | string | yes | Base URL of your Overseerr server (no trailing slash) |
+| `overseerr_api_key` | string | yes | Overseerr API key (Settings > General > API Key) |
+
+## How it works
+
+1. `plugin.json` declares `"mcpServers": "./.mcp.json"` — Claude Code reads this on install.
+2. `.mcp.json` defines the stdio command and env vars. Sensitive vars use `${userConfig.overseerr_url}` / `${userConfig.overseerr_api_key}` interpolation.
+3. Claude Code prompts the user for each `userConfig` field and substitutes the values at spawn time.
+4. The server starts via stdio — no HTTP listener, no bearer token needed.
 
 ## Settings (Gemini)
 
@@ -20,22 +25,9 @@ Configured through the Gemini extension settings UI.
 | Overseerr URL | `OVERSEERR_URL` | no | URL of the Overseerr instance |
 | Overseerr API Key | `OVERSEERR_API_KEY` | yes | API key from Overseerr Settings |
 
-## Environment variable sync
+## Docker / HTTP deployment
 
-The `sync-env.sh` hook maps plugin userConfig to `.env` variables:
-
-```
-CLAUDE_PLUGIN_OPTION_OVERSEERR_URL      → OVERSEERR_URL
-CLAUDE_PLUGIN_OPTION_OVERSEERR_API_KEY  → OVERSEERR_API_KEY
-CLAUDE_PLUGIN_OPTION_OVERSEERR_MCP_URL  → OVERSEERR_MCP_URL
-CLAUDE_PLUGIN_OPTION_OVERSEERR_MCP_TOKEN → OVERSEERR_MCP_TOKEN
-```
-
-The hook runs at session start and creates/updates `.env` with file locking and backups.
-
-## Manual configuration
-
-For non-plugin deployments, copy `.env.example` to `.env` and edit directly:
+For Docker or HTTP deployments, credentials go in `.env` alongside `docker-compose.yaml`:
 
 ```bash
 cp .env.example .env

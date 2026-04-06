@@ -2,7 +2,16 @@
 
 Complete environment variable reference and configuration options.
 
-## Environment file
+## Deployment paths
+
+| Path | Transport | Credentials source | Auth |
+| --- | --- | --- | --- |
+| **Plugin (stdio)** | `stdio` | `${userConfig.*}` in `.mcp.json` | None (no HTTP layer) |
+| **Docker (HTTP)** | `streamable-http` | `.env` file | Bearer token (`OVERSEERR_MCP_TOKEN`) |
+
+For plugin deployment, see [Plugin Configuration](plugin/CONFIG.md).
+
+## Environment file (Docker / HTTP)
 
 ```bash
 cp .env.example .env
@@ -61,39 +70,14 @@ Log file: `logs/overseerr_mcp.log` (rotating, 5 MB max, 3 backups).
 
 ## Plugin userConfig
 
-When installed as a Claude Code plugin, these fields map to `userConfig` in `.claude-plugin/plugin.json`:
+When installed as a Claude Code plugin, these fields are declared in `.claude-plugin/plugin.json` and interpolated into `.mcp.json` via `${userConfig.*}`:
 
-```json
-{
-  "userConfig": {
-    "overseerr_mcp_url": {
-      "type": "string",
-      "title": "Overseerr MCP Server URL",
-      "description": "URL of the overseerr-mcp MCP server (e.g. http://overseerr-mcp:9151).",
-      "default": "https://overseerr.tootie.tv/mcp",
-      "sensitive": false
-    },
-    "overseerr_mcp_token": {
-      "type": "string",
-      "title": "MCP Server Bearer Token",
-      "description": "Bearer token for authenticating with the MCP server.",
-      "sensitive": true
-    },
-    "overseerr_url": {
-      "type": "string",
-      "title": "Overseerr Server URL",
-      "description": "Base URL of your Overseerr server.",
-      "sensitive": true
-    },
-    "overseerr_api_key": {
-      "type": "string",
-      "title": "Overseerr API Key",
-      "description": "Overseerr API key. Found in Overseerr Settings > General > API Key.",
-      "sensitive": true
-    }
-  }
-}
-```
+| Key | Sensitive | Description |
+| --- | --- | --- |
+| `overseerr_url` | yes | Base URL of your Overseerr server (no trailing slash) |
+| `overseerr_api_key` | yes | Overseerr API key (Settings > General > API Key) |
+
+HTTP-only fields (`overseerr_mcp_url`, `overseerr_mcp_token`) are not included — stdio transport does not use them.
 
 ## .env.example conventions
 

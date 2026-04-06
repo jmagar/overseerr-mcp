@@ -2,10 +2,20 @@
 
 Complete reference for all environment variables read by the server.
 
+## Deployment paths
+
+| Path | Transport | Credentials source | Auth |
+| --- | --- | --- | --- |
+| **Plugin (stdio)** | `stdio` | `${userConfig.*}` in `.mcp.json` | None (no HTTP layer) |
+| **Docker (HTTP)** | `streamable-http` | `.env` file | Bearer token (`OVERSEERR_MCP_TOKEN`) |
+
+For plugin deployment, see [Plugin Configuration](../plugin/CONFIG.md).
+
 ## Loading order
 
 1. `python-dotenv` loads `.env` from the project root (`load_dotenv(override=True)`)
 2. System/container environment variables (overridden by .env due to `override=True`)
+3. For plugin/stdio: env vars are passed directly by Claude Code via `.mcp.json` — they are already in `process.env` before `dotenv` loads, and `dotenv` with `override=True` will overwrite them only if a `.env` file exists
 
 ## Required variables
 

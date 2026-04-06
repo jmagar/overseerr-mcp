@@ -68,8 +68,20 @@ logger.info(f"OVERSEERR_URL loaded: {'Yes' if OVERSEERR_URL else 'No'}")
 logger.info(f"OVERSEERR_API_KEY loaded: {'Yes' if OVERSEERR_API_KEY else 'No'}")
 
 if not OVERSEERR_URL or not OVERSEERR_API_KEY:
-    logger.error("CRITICAL: OVERSEERR_URL and OVERSEERR_API_KEY must be set. Server cannot start.")
+    missing = [
+        v
+        for v, val in [("OVERSEERR_URL", OVERSEERR_URL), ("OVERSEERR_API_KEY", OVERSEERR_API_KEY)]
+        if not val
+    ]
+    logger.error(
+        f"overseerr-mcp requires {', '.join(missing)} to be set. "
+        "Configure it in Claude Code plugin settings."
+    )
     sys.exit(1)
+
+# Scrub sensitive credentials from process environment
+for _env_key in ("OVERSEERR_API_KEY", "OVERSEERR_MCP_TOKEN"):
+    os.environ.pop(_env_key, None)
 
 # --- Client Initialization ---
 overseerr_client: OverseerrApiClient | None = None

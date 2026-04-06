@@ -15,20 +15,8 @@
     "plex",
     "mcp"
   ],
+  "mcpServers": "./.mcp.json",
   "userConfig": {
-    "overseerr_mcp_url": {
-      "type": "string",
-      "title": "Overseerr MCP Server URL",
-      "description": "URL of the overseerr-mcp MCP server (e.g. http://overseerr-mcp:9151).",
-      "default": "https://overseerr.tootie.tv/mcp",
-      "sensitive": false
-    },
-    "overseerr_mcp_token": {
-      "type": "string",
-      "title": "MCP Server Bearer Token",
-      "description": "Bearer token for authenticating with the MCP server. Must match OVERSEERR_MCP_TOKEN in the server's .env. Generate with: openssl rand -hex 32",
-      "sensitive": true
-    },
     "overseerr_url": {
       "type": "string",
       "title": "Overseerr Server URL",

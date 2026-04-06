@@ -4,11 +4,22 @@
       "command": "uv",
       "args": [
         "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
         "overseerr-mcp-server"
       ],
-      "cwd": "./",
       "env": {
-        "OVERSEERR_MCP_TRANSPORT": "stdio"
+        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/.venv",
+        "OVERSEERR_MCP_TRANSPORT": "stdio",
+        "OVERSEERR_URL": "${userConfig.overseerr_url}",
+        "OVERSEERR_API_KEY": "${userConfig.overseerr_api_key}",
+        "OVERSEERR_MCP_NO_AUTH": "true",
+        "OVERSEERR_MCP_HOST": "0.0.0.0",
+        "OVERSEERR_MCP_PORT": "9151",
+        "OVERSEERR_MCP_ALLOW_DESTRUCTIVE": "false",
+        "OVERSEERR_MCP_ALLOW_YOLO": "false",
+        "OVERSEERR_LOG_LEVEL": "INFO",
+        "LOG_LEVEL": "INFO"
       }
     }
   }
