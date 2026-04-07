@@ -13,12 +13,8 @@ overseerr-mcp/
 │   └── SKILL.md                 # Trigger phrases, tool reference, fallback mode
 │
 ├── hooks/                       # Plugin hooks
-│   ├── hooks.json               # Hook triggers configuration
-│   └── scripts/                 # Hook scripts
-│       ├── sync-env.sh          # Sync userConfig to .env
-│       ├── fix-env-perms.sh     # Enforce .env permissions
-│       ├── ensure-gitignore.sh  # Verify .gitignore patterns
-│       └── ensure-ignore-files.sh # Verify .gitignore + .dockerignore
+│   ├── CLAUDE.md                # Hook development notes
+│   └── hooks.json               # Hook triggers configuration
 │
 ├── scripts/                     # CI and maintenance scripts
 │   ├── smoke-test.sh            # mcporter smoke test
@@ -65,7 +61,6 @@ overseerr-mcp/
 ├── pyproject.toml               # Python project config
 ├── uv.lock                      # Lock file
 ├── Justfile                     # Task runner
-├── .pre-commit-config.yaml      # Pre-commit hooks
 ├── .env.example                 # Environment template
 └── .gitignore                   # Git exclusions
 ```
@@ -75,4 +70,4 @@ overseerr-mcp/
 - `AGENTS.md` and `GEMINI.md` are symlinks to `CLAUDE.md`
 - `backups/`, `logs/`, `data/` directories contain `.gitkeep` for tracking
 - `.env` is always gitignored; `.env.example` is tracked
-- All hook and CI scripts are in `hooks/scripts/` and `scripts/` respectively
+- Repository automation lives in `hooks/hooks.json`, GitHub Actions, and `scripts/`

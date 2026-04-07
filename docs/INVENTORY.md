@@ -119,6 +119,5 @@ Complete listing of all plugin components.
 | --- | --- |
 | `ruff` (>=0.9) | Linter and formatter |
 | `ty` (>=0.0.1a3) | Type checker |
-| `pre-commit` (>=4.0) | Git hook management |
 | `pytest` (>=8.0) | Test framework |
 | `pytest-asyncio` (>=0.23) | Async test support |
