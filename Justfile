@@ -39,7 +39,8 @@ test-live-both:
 
 setup:
     mkdir -p ~/.config/overseerr-mcp
-    @echo "Add credentials to ~/.config/overseerr-mcp/.env"
+    cp -n .env.example ~/.config/overseerr-mcp/.env
+    @echo "Edit ~/.config/overseerr-mcp/.env with your credentials"
 
 gen-token:
     openssl rand -hex 32
