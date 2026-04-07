@@ -1,131 +1,170 @@
-"""Overseerr MCP Server — FastMCP server for Overseerr media requests."""
+"""Overseerr MCP Server — FastMCP server for Overseerr media requests.
+
+Tools:
+  overseerr       — all operations via action + subaction routing
+  overseerr_help  — returns markdown help for all actions
+
+Transport: OVERSEERR_MCP_TRANSPORT=stdio (default) | http
+Auth:      OVERSEERR_MCP_TOKEN (required for HTTP; skipped for stdio)
+"""
+
+from __future__ import annotations
 
 import hmac
 import logging
+import logging.handlers
 import os
 import sys
-from collections.abc import Callable
 from contextlib import asynccontextmanager
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
-from fastmcp import Context, FastMCP
+from fastmcp import FastMCP
+from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
+
+if TYPE_CHECKING:
+    from starlette.requests import Request
 
 from .client import OverseerrApiClient
 
-# --- Environment & Configuration ---
-REPO_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(dotenv_path=REPO_ROOT / ".env", override=True)
+# ---------------------------------------------------------------------------
+# Environment loading
+# ---------------------------------------------------------------------------
+load_dotenv(dotenv_path=Path.home() / ".config" / "overseerr-mcp" / ".env")
 
-OVERSEERR_URL = os.getenv("OVERSEERR_URL")
-OVERSEERR_API_KEY = os.getenv("OVERSEERR_API_KEY")
-
-OVERSEERR_MCP_TRANSPORT = os.getenv("OVERSEERR_MCP_TRANSPORT", "streamable-http").lower()
-OVERSEERR_MCP_HOST = os.getenv("OVERSEERR_MCP_HOST", "0.0.0.0")
-OVERSEERR_MCP_PORT = int(os.getenv("OVERSEERR_MCP_PORT", "6975"))
-OVERSEERR_MCP_TOKEN = os.getenv("OVERSEERR_MCP_TOKEN", "")
-OVERSEERR_MCP_NO_AUTH = os.getenv("OVERSEERR_MCP_NO_AUTH", "false").lower() == "true"
-
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
 LOG_LEVEL_STR = os.getenv("OVERSEERR_LOG_LEVEL", os.getenv("LOG_LEVEL", "INFO")).upper()
 NUMERIC_LOG_LEVEL = getattr(logging, LOG_LEVEL_STR, logging.INFO)
 
-# --- Logging Setup ---
 logger = logging.getLogger("OverseerrMCPServer")
 logger.setLevel(NUMERIC_LOG_LEVEL)
 logger.propagate = False
 
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(NUMERIC_LOG_LEVEL)
-console_handler.setFormatter(
-    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-)
+_console = logging.StreamHandler(sys.stderr)
+_console.setLevel(NUMERIC_LOG_LEVEL)
+_console.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-    logger.addHandler(console_handler)
+    logger.addHandler(_console)
 
-LOGS_DIR = REPO_ROOT / "logs"
-LOGS_DIR.mkdir(exist_ok=True)
-log_file_path = LOGS_DIR / "overseerr_mcp.log"
-file_handler = RotatingFileHandler(
-    log_file_path, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
-)
-file_handler.setLevel(NUMERIC_LOG_LEVEL)
-file_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s"
-        " - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
+_logs_dir = Path(__file__).resolve().parent.parent / "logs"
+try:
+    _logs_dir.mkdir(parents=True, exist_ok=True)
+    _file_handler = logging.handlers.RotatingFileHandler(
+        _logs_dir / "overseerr_mcp.log",
+        maxBytes=5 * 1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
     )
-)
-if not any(isinstance(h, RotatingFileHandler) for h in logger.handlers):
-    logger.addHandler(file_handler)
+    _file_handler.setLevel(NUMERIC_LOG_LEVEL)
+    _file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s"
+            " - %(module)s - %(funcName)s - %(lineno)d - %(message)s"
+        )
+    )
+    if not any(isinstance(h, logging.handlers.RotatingFileHandler) for h in logger.handlers):
+        logger.addHandler(_file_handler)
+except (OSError, PermissionError) as _e:
+    logger.warning("File logging unavailable (%s) — logging to stderr only", _e)
 
-logger.info(f"Log level: {LOG_LEVEL_STR}, log file: {log_file_path}")
-logger.info(f"OVERSEERR_URL loaded: {'Yes' if OVERSEERR_URL else 'No'}")
-logger.info(f"OVERSEERR_API_KEY loaded: {'Yes' if OVERSEERR_API_KEY else 'No'}")
+# ---------------------------------------------------------------------------
+# Configuration & startup validation
+# ---------------------------------------------------------------------------
+OVERSEERR_URL = os.getenv("OVERSEERR_URL", "")
+OVERSEERR_API_KEY = os.getenv("OVERSEERR_API_KEY", "")
+OVERSEERR_MCP_TOKEN = os.getenv("OVERSEERR_MCP_TOKEN")
+OVERSEERR_MCP_NO_AUTH = os.getenv("OVERSEERR_MCP_NO_AUTH", "").lower() in ("true", "1", "yes")
+OVERSEERR_MCP_TRANSPORT = os.getenv("OVERSEERR_MCP_TRANSPORT", "stdio").lower()
+OVERSEERR_MCP_HOST = os.getenv("OVERSEERR_MCP_HOST", "0.0.0.0")
+OVERSEERR_MCP_PORT = int(os.getenv("OVERSEERR_MCP_PORT", "9151"))
 
-if not OVERSEERR_URL or not OVERSEERR_API_KEY:
-    logger.error("CRITICAL: OVERSEERR_URL and OVERSEERR_API_KEY must be set. Server cannot start.")
+if not OVERSEERR_URL:
+    print(
+        "CRITICAL: OVERSEERR_URL must be set in the environment.\n"
+        "If running as a Claude Code plugin, set it in the plugin settings.",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
-# --- Client Initialization ---
-overseerr_client: OverseerrApiClient | None = None
-try:
-    overseerr_client = OverseerrApiClient(base_url=OVERSEERR_URL, api_key=OVERSEERR_API_KEY)
-    logger.info("OverseerrApiClient initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize OverseerrApiClient: {e}", exc_info=True)
+if not OVERSEERR_API_KEY:
+    print(
+        "CRITICAL: OVERSEERR_API_KEY must be set in the environment.\n"
+        "If running as a Claude Code plugin, set it in the plugin settings.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+if OVERSEERR_MCP_TRANSPORT != "stdio" and not OVERSEERR_MCP_NO_AUTH and not OVERSEERR_MCP_TOKEN:
+    print(
+        "CRITICAL: OVERSEERR_MCP_TOKEN is not set.\n"
+        "Set OVERSEERR_MCP_TOKEN to a secure random token, or set OVERSEERR_MCP_NO_AUTH=true\n"
+        "to disable auth (only appropriate when secured at the network/proxy level).\n\n"
+        "Generate a token with: openssl rand -hex 32",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+# Scrub sensitive credentials from process environment to reduce /proc exposure
+for _key in ("OVERSEERR_API_KEY", "OVERSEERR_MCP_TOKEN"):
+    os.environ.pop(_key, None)
+
+# ---------------------------------------------------------------------------
+# Overseerr API client (singleton)
+# ---------------------------------------------------------------------------
+_client = OverseerrApiClient(base_url=OVERSEERR_URL, api_key=OVERSEERR_API_KEY)
 
 
-# --- Bearer Auth Middleware ---
+# ---------------------------------------------------------------------------
+# FastMCP server + BearerAuth middleware
+# ---------------------------------------------------------------------------
 class BearerAuthMiddleware(BaseHTTPMiddleware):
-    """Enforce Bearer token authentication on all requests except /health."""
-
-    def __init__(self, app: Any, token: str) -> None:
-        super().__init__(app)
-        self._token = token
-
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Health endpoint is unauthenticated (for Docker healthchecks)
-        if request.url.path == "/health":
+    async def dispatch(self, request: Request, call_next):
+        if OVERSEERR_MCP_NO_AUTH:
             return await call_next(request)
-
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer ") or not hmac.compare_digest(
-            auth_header[len("Bearer ") :], self._token
-        ):
-            logger.warning(f"Unauthorized request to {request.url.path} from {request.client}")
+        # /health is always unauthenticated
+        if request.url.path in ("/health",):
+            return await call_next(request)
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer "):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
+        provided = auth[7:]
+        if not hmac.compare_digest(provided, OVERSEERR_MCP_TOKEN or ""):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         return await call_next(request)
 
 
-# --- Lifespan ---
+# ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
+
+
 @asynccontextmanager
-async def overseerr_lifespan(app: FastMCP):
+async def overseerr_lifespan(_app: FastMCP):
     logger.info("Overseerr MCP: startup")
-    app.overseerr_client = overseerr_client  # ty: ignore[unresolved-attribute]
     yield
     logger.info("Overseerr MCP: shutdown")
-    if overseerr_client:
-        await overseerr_client.close()
+    await _client.close()
 
 
-# --- MCP Server ---
 mcp = FastMCP(
     name="OverseerrMCP",
     instructions="Interact with an Overseerr instance for media requests and discovery.",
     lifespan=overseerr_lifespan,
 )
-mcp.overseerr_client = overseerr_client  # ty: ignore[unresolved-attribute]
 
 
-# --- Tools ---
+# ---------------------------------------------------------------------------
+# Tools
+# ---------------------------------------------------------------------------
+
+
 @mcp.tool()
-async def search_media(ctx: Context, query: str, media_type: str | None = None) -> list[dict] | str:
+async def search_media(query: str, media_type: str | None = None) -> list[dict] | str:
     """Searches Overseerr for movies or TV shows.
 
     Args:
@@ -136,11 +175,8 @@ async def search_media(ctx: Context, query: str, media_type: str | None = None) 
         A list of search results or an error string.
     """
     logger.info(f"search_media(query='{query}', media_type='{media_type}')")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
-    api_response = await client.get("/search", params={"query": query})
+    api_response = await _client.get("/search", params={"query": query})
     if isinstance(api_response, str):
         return api_response
 
@@ -174,7 +210,7 @@ async def search_media(ctx: Context, query: str, media_type: str | None = None) 
 
 
 @mcp.tool()
-async def get_movie_details(ctx: Context, tmdb_id: int) -> dict | str:
+async def get_movie_details(tmdb_id: int) -> dict | str:
     """Retrieves detailed information for a specific movie from Overseerr.
 
     Args:
@@ -184,11 +220,8 @@ async def get_movie_details(ctx: Context, tmdb_id: int) -> dict | str:
         A dictionary containing movie details or an error string.
     """
     logger.info(f"get_movie_details(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
-    api_response = await client.get(f"/movie/{tmdb_id}")
+    api_response = await _client.get(f"/movie/{tmdb_id}")
     if isinstance(api_response, str):
         return api_response
 
@@ -200,7 +233,7 @@ async def get_movie_details(ctx: Context, tmdb_id: int) -> dict | str:
 
 
 @mcp.tool()
-async def get_tv_show_details(ctx: Context, tmdb_id: int) -> dict | str:
+async def get_tv_show_details(tmdb_id: int) -> dict | str:
     """Retrieves detailed information for a specific TV show from Overseerr.
 
     Args:
@@ -210,11 +243,8 @@ async def get_tv_show_details(ctx: Context, tmdb_id: int) -> dict | str:
         A dictionary containing TV show details (including seasons) or an error string.
     """
     logger.info(f"get_tv_show_details(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
-    api_response = await client.get(f"/tv/{tmdb_id}")
+    api_response = await _client.get(f"/tv/{tmdb_id}")
     if isinstance(api_response, str):
         return api_response
 
@@ -226,7 +256,7 @@ async def get_tv_show_details(ctx: Context, tmdb_id: int) -> dict | str:
 
 
 @mcp.tool()
-async def request_movie(ctx: Context, tmdb_id: int) -> dict | str:
+async def request_movie(tmdb_id: int) -> dict | str:
     """Requests a movie on Overseerr using its TMDB ID.
 
     Args:
@@ -236,11 +266,8 @@ async def request_movie(ctx: Context, tmdb_id: int) -> dict | str:
         A dictionary containing the request details or an error string.
     """
     logger.info(f"request_movie(tmdb_id={tmdb_id})")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
-    api_response = await client.post(
+    api_response = await _client.post(
         "/request", json_data={"mediaType": "movie", "mediaId": tmdb_id}
     )
     if isinstance(api_response, str):
@@ -261,9 +288,7 @@ async def request_movie(ctx: Context, tmdb_id: int) -> dict | str:
 
 
 @mcp.tool()
-async def request_tv_show(
-    ctx: Context, tmdb_id: int, seasons: list[int] | None = None
-) -> dict | str:
+async def request_tv_show(tmdb_id: int, seasons: list[int] | None = None) -> dict | str:
     """Requests a TV show or specific seasons on Overseerr using its TMDB ID.
 
     Args:
@@ -274,16 +299,13 @@ async def request_tv_show(
         A dictionary containing the request details or an error string.
     """
     logger.info(f"request_tv_show(tmdb_id={tmdb_id}, seasons={seasons})")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
     payload: dict[str, Any] = {
         "mediaType": "tv",
         "mediaId": tmdb_id,
         "seasons": seasons if seasons else "all",
     }
-    api_response = await client.post("/request", json_data=payload)
+    api_response = await _client.post("/request", json_data=payload)
     if isinstance(api_response, str):
         return api_response
 
@@ -295,8 +317,10 @@ async def request_tv_show(
         and api_response["media"].get("tmdbId") == tmdb_id
     ):
         logger.info(
-            f"TV show TMDB ID {tmdb_id} requested (seasons: {payload['seasons']})."
-            f" Request ID: {api_response['id']}"
+            "TV show TMDB ID %s requested (seasons: %s). Request ID: %s",
+            tmdb_id,
+            payload["seasons"],
+            api_response["id"],
         )
         return api_response
 
@@ -305,7 +329,7 @@ async def request_tv_show(
 
 
 @mcp.tool()
-async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> list[dict] | str:
+async def list_failed_requests(count: int = 10, skip: int = 0) -> list[dict] | str:
     """Lists failed media requests from Overseerr.
 
     Args:
@@ -316,11 +340,8 @@ async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> 
         A list of failed requests or an error string.
     """
     logger.info(f"list_failed_requests(count={count}, skip={skip})")
-    client = getattr(ctx.fastmcp, "overseerr_client", None) or overseerr_client
-    if not client:
-        return "Error: Overseerr API client is not available."
 
-    api_response = await client.get(
+    api_response = await _client.get(
         "/request", params={"take": count, "skip": skip, "sort": "modified", "filter": "failed"}
     )
     if isinstance(api_response, str):
@@ -348,7 +369,9 @@ async def list_failed_requests(ctx: Context, count: int = 10, skip: int = 0) -> 
     return "Error: Received unexpected data structure from Overseerr for failed requests."
 
 
-# --- Tool: overseerr_help ---
+# ---------------------------------------------------------------------------
+# Tool: overseerr_help
+# ---------------------------------------------------------------------------
 
 _HELP_TEXT = """# Overseerr MCP Server
 
@@ -460,39 +483,41 @@ async def overseerr_help() -> str:
     return _HELP_TEXT
 
 
-# --- Health Endpoint ---
+# ---------------------------------------------------------------------------
+# /health endpoint (unauthenticated)
+# ---------------------------------------------------------------------------
+
+
 @mcp.custom_route("/health", methods=["GET"])
-async def health_check(request: Request) -> JSONResponse:
+async def health_check(_request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+
 def main() -> None:
-    """Entry point for the Overseerr MCP server."""
     logger.info(
-        f"Starting Overseerr MCP Server — transport: {OVERSEERR_MCP_TRANSPORT},"
-        f" port: {OVERSEERR_MCP_PORT}"
+        "Starting Overseerr MCP Server — transport=%s host=%s port=%s auth=%s",
+        OVERSEERR_MCP_TRANSPORT,
+        OVERSEERR_MCP_HOST,
+        OVERSEERR_MCP_PORT,
+        "disabled" if OVERSEERR_MCP_NO_AUTH else "bearer",
     )
 
     if OVERSEERR_MCP_TRANSPORT == "stdio":
-        mcp.run()
-    elif OVERSEERR_MCP_TRANSPORT in ("http", "streamable-http"):
-        app = mcp.http_app(path="/mcp")
-        if not OVERSEERR_MCP_NO_AUTH and OVERSEERR_MCP_TOKEN:
-            app.add_middleware(BearerAuthMiddleware, token=OVERSEERR_MCP_TOKEN)
-            logger.info("BearerAuthMiddleware enabled")
-        else:
-            logger.warning(
-                "Bearer auth disabled — set OVERSEERR_MCP_TOKEN"
-                " to enable request-level authentication"
-            )
-        import uvicorn
-
-        uvicorn.run(app, host=OVERSEERR_MCP_HOST, port=OVERSEERR_MCP_PORT)
-    elif OVERSEERR_MCP_TRANSPORT == "sse":
-        mcp.run(transport="sse", host=OVERSEERR_MCP_HOST, port=OVERSEERR_MCP_PORT, path="/sse")
+        mcp.run(transport="stdio")
     else:
-        logger.error(f"Invalid transport '{OVERSEERR_MCP_TRANSPORT}', falling back to stdio")
-        mcp.run()
+        http_middleware = None if OVERSEERR_MCP_NO_AUTH else [Middleware(BearerAuthMiddleware)]
+        mcp.run(
+            transport="streamable-http",
+            host=OVERSEERR_MCP_HOST,
+            port=OVERSEERR_MCP_PORT,
+            log_level=LOG_LEVEL_STR.lower(),
+            middleware=http_middleware,
+        )
 
 
 if __name__ == "__main__":

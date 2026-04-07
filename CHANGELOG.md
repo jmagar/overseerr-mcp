@@ -29,3 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual transport (http/stdio via OVERSEERR_MCP_TRANSPORT)
 - Pagination for all list actions
 - Destructive ops confirmation gate
+
+## [1.1.0] - 2026-04-07
+
+### Added
+- Bundled `skills/overseerr/scripts/overseerr-api` HTTP fallback wrapper for search, details, requests, and failed-request listing when the MCP server is unavailable
+- Shell regression test coverage for the Overseerr fallback wrapper request formatting and endpoint selection
+
+### Changed
+- Updated the Overseerr skill docs to use the bundled fallback wrapper instead of ad hoc `curl` examples
