@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-04-07
+
+### Fixed
+- Scoped Lefthook Python checks to staged `*.py` files so doc and config commits do not trigger unnecessary repo-wide lint, format, and typecheck work during `git commit`
+
 ## [1.0.2] - 2026-04-04
 
 ### Added
