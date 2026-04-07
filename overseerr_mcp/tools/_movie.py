@@ -41,7 +41,7 @@ async def _handle_movie(
     tmdb_id: int | None,
     *,
     client: OverseerrApiClient,
-) -> dict[str, Any] | str:
+) -> dict[str, Any] | list[Any] | str:
     """Handle movie action subactions."""
     validate_subaction(subaction, _MOVIE_SUBACTIONS, "movie")
 
