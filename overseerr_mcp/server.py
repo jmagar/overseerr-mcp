@@ -1,8 +1,7 @@
 """Overseerr MCP Server — FastMCP server for Overseerr media requests.
 
-Tools:
-  overseerr       — all operations via action + subaction routing
-  overseerr_help  — returns markdown help for all actions
+Tool:
+  overseerr — all operations via action + subaction routing
 
 Transport: OVERSEERR_MCP_TRANSPORT=stdio (default) | http
 Auth:      OVERSEERR_MCP_TOKEN (required for HTTP; skipped for stdio)
