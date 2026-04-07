@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-07
+
+### Added
+- Comprehensive `docs/ENV.md` with full variable reference, deployment mode table, and `load_dotenv` precedence explanation
+
+### Changed
+- All credentials now load from a single dotfile at `~/.config/overseerr-mcp/.env` across all deployment modes (plugin, Docker, uvx, local dev)
+- Removed sensitive credential fields (`overseerr_api_key`, `overseerr_mcp_token`) from plugin `userConfig` — credentials come from the dotfile only
+- Default transport changed to `stdio`; default port corrected to `9151`
+- README updated to reflect dotfile setup, stdio default, correct port, and removed SSE transport references
+- `bin/load-env` and `bin/sync-urls` simplified to use `${HOME}/.config/overseerr-mcp/.env` directly
+- `docker-compose.yml` env_file uses `${HOME}/.config/overseerr-mcp/.env`
+- `just setup` bootstraps the dotfile from `.env.example`
+
+### Removed
+- `.pre-commit-config.yaml` (replaced by Lefthook)
+- SSE transport support references
+
 ## [1.0.3] - 2026-04-07
 
 ### Fixed

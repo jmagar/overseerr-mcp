@@ -8,16 +8,16 @@ MCP server for searching Overseerr media, retrieving TMDB-backed details, and su
 
 ## Overview
 
-The server talks to an existing Overseerr instance via its REST API and exposes MCP tools over HTTP, stdio, or SSE transports. All Overseerr API authentication is handled server-side — clients only need a Bearer token for the MCP endpoint itself.
+The server talks to an existing Overseerr instance via its REST API and exposes MCP tools over stdio (default) or HTTP transports. All Overseerr API authentication is handled server-side — clients only need a Bearer token for the MCP endpoint itself when using HTTP transport.
 
 ## What this repository ships
 
 - `overseerr_mcp/`: FastMCP server and Overseerr HTTP client
 - `.claude-plugin/`, `.codex-plugin/`, `gemini-extension.json`: client manifests
-- `skills/overseerr/`: Claude-facing skill docs
+- `skills/`: Claude-facing skill docs for Overseerr and bundled media services
+- `bin/`: plugin executables (`load-env`, `sync-urls`, `extract-keys`, etc.)
 - `docker-compose.yml`, `Dockerfile`, `entrypoint.sh`: container deployment
-- `docs/overseerr-api.yaml`: bundled Overseerr API reference
-- `scripts/`: linting, Docker, and smoke-test helpers
+- `docs/`: ENV variable reference and upstream API spec
 
 ## Tools
 
@@ -301,59 +301,50 @@ uv run python -m overseerr_mcp
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in required values:
+All credentials live in a single dotfile:
 
-```bash
-cp .env.example .env
-# or: just setup
+```
+~/.config/overseerr-mcp/.env
 ```
 
-### Environment variables
+Bootstrap it from the example:
+
+```bash
+just setup   # mkdir -p ~/.config/overseerr-mcp && cp .env.example ~/.config/overseerr-mcp/.env
+```
+
+Then edit `~/.config/overseerr-mcp/.env` and fill in `OVERSEERR_URL` and `OVERSEERR_API_KEY`.
+
+See [docs/ENV.md](docs/ENV.md) for the full variable reference including media service vars, Docker vars, and how each deployment mode loads the file.
+
+### Key variables
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
 | `OVERSEERR_URL` | yes | — | Base URL of your Overseerr instance (e.g. `https://overseerr.example.com`) |
 | `OVERSEERR_API_KEY` | yes | — | Overseerr API key (Settings → General → API Key) |
-| `OVERSEERR_MCP_TRANSPORT` | no | `streamable-http` | Transport mode: `streamable-http`, `http`, `stdio`, or `sse` |
-| `OVERSEERR_MCP_HOST` | no | `0.0.0.0` | Host interface to bind (use `0.0.0.0` for Docker) |
-| `OVERSEERR_MCP_PORT` | no | `6975` | Port to bind; `.env.example` recommends `9151` |
-| `OVERSEERR_MCP_TOKEN` | no | `""` | Bearer token for MCP endpoint auth; generate with `openssl rand -hex 32` |
-| `OVERSEERR_MCP_NO_AUTH` | no | `false` | Set `true` to disable bearer auth (only if network-level auth is in place) |
-| `OVERSEERR_MCP_ALLOW_DESTRUCTIVE` | no | `false` | Gate for destructive operations (reserved for future use) |
-| `OVERSEERR_MCP_ALLOW_YOLO` | no | `false` | Gate to bypass confirmation prompts (reserved for future use) |
-| `OVERSEERR_LOG_LEVEL` | no | `INFO` | Log verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`. `LOG_LEVEL` is accepted as a fallback. |
-
-`OVERSEERR_URL` and `OVERSEERR_API_KEY` are required — the server exits at startup if either is missing.
+| `OVERSEERR_MCP_TRANSPORT` | no | `stdio` | `stdio` for Claude Code plugin/uvx; `http` for Docker/standalone |
+| `OVERSEERR_MCP_PORT` | no | `9151` | Port for HTTP transport |
+| `OVERSEERR_MCP_TOKEN` | no | — | Bearer token for HTTP auth; generate with `openssl rand -hex 32` |
+| `OVERSEERR_MCP_NO_AUTH` | no | `false` | Disable bearer auth on HTTP transport (only if network-level auth is in place) |
+| `OVERSEERR_LOG_LEVEL` | no | `INFO` | `DEBUG`, `INFO`, `WARNING`, or `ERROR` |
 
 ### Transport modes
 
-| Mode | Description | When to use |
-| --- | --- | --- |
-| `streamable-http` | HTTP with streaming (MCP spec default) | Default; use for Claude.ai or any modern MCP client |
-| `http` | Standard HTTP | Use when streaming is unsupported by the client |
-| `stdio` | Standard input/output | Use for local CLI integration (no network port) |
-| `sse` | Server-Sent Events | Use for legacy MCP clients that require SSE |
+| Mode | When to use |
+| --- | --- |
+| `stdio` | Claude Code plugin, `uvx`, local CLI — default |
+| `http` | Docker, standalone server, any HTTP MCP client |
 
-For HTTP transports, the MCP endpoint is served at `/mcp`. Requests must include `Authorization: Bearer <OVERSEERR_MCP_TOKEN>` unless `OVERSEERR_MCP_NO_AUTH=true`.
-
-For `sse`, the endpoint is served at `/sse`.
+For HTTP transport, the MCP endpoint is at `/mcp`. Requests must include `Authorization: Bearer <OVERSEERR_MCP_TOKEN>` unless `OVERSEERR_MCP_NO_AUTH=true`. The `/health` endpoint is always unauthenticated.
 
 ### Authentication
 
-Generate a token:
-
 ```bash
-just gen-token
-# or: openssl rand -hex 32
+just gen-token   # generates: openssl rand -hex 32
 ```
 
-Set `OVERSEERR_MCP_TOKEN` in `.env` to that value. Configure your MCP client to send:
-
-```
-Authorization: Bearer <token>
-```
-
-The `/health` endpoint is always unauthenticated — it is used for Docker healthchecks.
+Set `OVERSEERR_MCP_TOKEN` in `~/.config/overseerr-mcp/.env`.
 
 ## Error handling
 

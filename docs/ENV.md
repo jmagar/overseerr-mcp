@@ -96,6 +96,16 @@ These are only relevant when running via `docker compose`. They are not read by 
 | Local dev (`just dev`) | Same as plugin — `load_dotenv` in `server.py` |
 | `uvx overseerr-mcp-server` | Same as plugin — `load_dotenv` in `server.py` |
 
+### Variable precedence
+
+`load_dotenv` does **not** override variables already set in the process environment. This means:
+
+- **Claude Code plugin**: `.mcp.json` sets `OVERSEERR_MCP_TRANSPORT=stdio` before the server starts. The dotfile value for `OVERSEERR_MCP_TRANSPORT` is ignored — the plugin always wins.
+- **Docker**: `docker-compose.yml` injects vars directly via `env_file`. `load_dotenv` is effectively redundant in this mode.
+- **Local dev / uvx**: Nothing pre-sets transport, so the dotfile value for `OVERSEERR_MCP_TRANSPORT` is the effective value. Set it to `http` for local HTTP testing, or omit it to use the `stdio` default.
+
+In practice: credentials (`OVERSEERR_URL`, `OVERSEERR_API_KEY`) always come from the dotfile. Transport/auth config is set by the deployment mechanism and the dotfile value is ignored.
+
 ---
 
 ## Security
