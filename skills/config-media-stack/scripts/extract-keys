@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Extract API keys from service config files.
+# Cats files via SSH (if --host given) or locally, then parses locally.
+#
+# Usage:
+#   extract-keys --appdata /mnt/user/appdata [--host myserver] [--env-file /path/to/.env]
+
+set -euo pipefail
+
+HOST=""
+APPDATA=""
+ENV_FILE="${HOME}/.config/overseerr-mcp/.env"
+mkdir -p "${HOME}/.config/overseerr-mcp"
+touch "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --host)     HOST="$2";     shift 2 ;;
+        --appdata)  APPDATA="$2";  shift 2 ;;
+        --env-file) ENV_FILE="$2"; shift 2 ;;
+        *) echo "Unknown argument: $1" >&2; exit 1 ;;
+    esac
+done
+
+if [[ -z "$APPDATA" ]]; then
+    echo "ERROR: --appdata is required" >&2
+    echo "Usage: extract-keys.sh --appdata /mnt/user/appdata [--host myserver]" >&2
+    exit 1
+fi
+
+# Cat a remote or local file. Parsing always happens locally.
+cat_file() {
+    local path="$1"
+    if [[ -n "$HOST" ]]; then
+        ssh "$HOST" cat "$path" 2>/dev/null
+    else
+        cat "$path" 2>/dev/null
+    fi
+}
+
+# Write or update a key in the .env file (never prints the value).
+set_env() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    else
+        echo "${key}=${value}" >> "$ENV_FILE"
+    fi
+    echo "  + ${key}"
+}
+
+FOUND=()
+MISSING=()
+
+try_extract() {
+    local label="$1" env_key="$2" value="$3"
+    if [[ -n "$value" && "$value" != "null" ]]; then
+        set_env "$env_key" "$value"
+        FOUND+=("$label")
+    else
+        MISSING+=("$label ($env_key)")
+    fi
+}
+
+echo "Extracting keys from ${HOST:-local}:${APPDATA}"
+echo ""
+
+# --- *arr apps (XML) ---
+for service in radarr sonarr prowlarr; do
+    label="${service^}"
+    key_var="${service^^}_API_KEY"
+    value=$(cat_file "${APPDATA}/${service}/config.xml" | grep -oP '(?<=<ApiKey>)[^<]+' || true)
+    try_extract "$label" "$key_var" "$value"
+done
+
+# --- Overseerr (JSON) ---
+value=$(cat_file "${APPDATA}/overseerr/settings.json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('main',{}).get('apiKey',''))" 2>/dev/null || true)
+try_extract "Overseerr" "OVERSEERR_API_KEY" "$value"
+
+# --- Tautulli (INI) ---
+value=$(cat_file "${APPDATA}/tautulli/config.ini" | grep -oP '(?<=^api_key = )\S+' || true)
+try_extract "Tautulli" "TAUTULLI_API_KEY" "$value"
+
+# --- SABnzbd (INI) ---
+value=$(cat_file "${APPDATA}/sabnzbd/sabnzbd.ini" | grep -oP '(?<=^api_key = )\S+' || true)
+try_extract "SABnzbd" "SABNZBD_API_KEY" "$value"
+
+# --- Plex token (Preferences.xml) ---
+# Tries Docker appdata path first, then bare-metal path.
+plex_prefs="${APPDATA}/plex/Library/Application Support/Plex Media Server/Preferences.xml"
+value=$(cat_file "$plex_prefs" | grep -oP '(?<=PlexOnlineToken=")[^"]+' || true)
+try_extract "Plex" "PLEX_TOKEN" "$value"
+
+chmod 600 "$ENV_FILE"
+
+echo ""
+if [[ ${#FOUND[@]} -gt 0 ]]; then
+    echo "Auto-extracted (${#FOUND[@]}): ${FOUND[*]}"
+fi
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    echo ""
+    echo "Not found — manual entry needed:"
+    for m in "${MISSING[@]}"; do
+        echo "  - $m"
+    done
+fi
+echo "  - Plex token (if not found above — check plex.tv or Preferences.xml path)"
+echo "  - qBittorrent username + password (hashed in config, cannot extract)"

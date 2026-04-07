@@ -4,11 +4,16 @@
       "command": "uv",
       "args": [
         "run",
+        "--project",
+        "${CLAUDE_PLUGIN_ROOT}",
         "overseerr-mcp-server"
       ],
-      "cwd": "./",
       "env": {
-        "OVERSEERR_MCP_TRANSPORT": "stdio"
+        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/.venv",
+        "OVERSEERR_MCP_TRANSPORT": "stdio",
+        "OVERSEERR_MCP_NO_AUTH": "true",
+        "OVERSEERR_LOG_LEVEL": "INFO",
+        "RUNNING_IN_DOCKER": "false"
       }
     }
   }

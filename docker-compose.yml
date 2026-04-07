@@ -14,10 +14,10 @@ services:
     ports:
       - "${OVERSEERR_MCP_PORT:-9151}:${OVERSEERR_MCP_PORT:-9151}"
     env_file:
-      - path: ~/.claude-homelab/.env
+      - path: ${HOME}/.config/overseerr-mcp/.env
         required: false
     volumes:
-      # - ./logs:/app/logs  # uncomment after: mkdir -p logs && chown 1000:1000 logs
+      - ${APPDATA_PATH:-./data}/overseerr-mcp:/app/data
     networks:
       - jakenet
     deploy:

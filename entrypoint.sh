@@ -11,4 +11,6 @@ if [ -z "${OVERSEERR_MCP_TOKEN:-}" ] && [ "${OVERSEERR_MCP_NO_AUTH:-false}" != "
     exit 1
 fi
 
+mkdir -p /app/logs /app/data
+
 exec python3 -m overseerr_mcp.server

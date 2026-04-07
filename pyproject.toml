@@ -1,6 +1,6 @@
 [project]
 name = "overseerr-mcp"
-version = "1.0.2"
+version = "1.1.0"
 description = "FastMCP server for Overseerr media requests"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,5 +27,12 @@ select = ["E", "F", "I", "UP"]
 
 [tool.ty]
 
+[tool.ty.environment]
+python = ".venv"
+
 [dependency-groups]
-dev = ["ruff>=0.9", "ty>=0.0.1a3", "pre-commit>=4.0", "pytest>=8.0", "pytest-asyncio>=0.23"]
+dev = ["ruff>=0.9", "ty>=0.0.1a3", "pytest>=8", "pytest-asyncio>=0.24"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

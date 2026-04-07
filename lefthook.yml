@@ -1,0 +1,16 @@
+no_auto_install: true
+
+pre-commit:
+  parallel: true
+  commands:
+    diff_check:
+      run: git diff --check --cached
+    lint:
+      glob: "*.py"
+      run: .venv/bin/ruff check {staged_files}
+    format:
+      glob: "*.py"
+      run: .venv/bin/ruff format --check {staged_files}
+    typecheck:
+      glob: "*.py"
+      run: .venv/bin/ty check

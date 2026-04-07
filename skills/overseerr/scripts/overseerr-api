@@ -1,0 +1,545 @@
+#!/bin/bash
+# Overseerr API helper script
+# Usage: overseerr-api <command> [args...]
+
+set -euo pipefail
+
+# shellcheck source=/dev/null
+source load-env || { echo "ERROR: load-env not in PATH. Is the plugin enabled?" >&2; exit 1; }
+
+load_service_credentials "overseerr" "OVERSEERR_URL" "OVERSEERR_API_KEY"
+
+OVERSEERR_URL="${OVERSEERR_URL%/}"
+API="${OVERSEERR_URL}/api/v1"
+AUTH_HEADER="X-Api-Key: ${OVERSEERR_API_KEY}"
+
+api_call() {
+    local method="$1"
+    local endpoint="$2"
+    shift 2
+
+    curl -sS -X "$method" \
+        -H "$AUTH_HEADER" \
+        -H "Content-Type: application/json" \
+        "$@" \
+        "${API}${endpoint}"
+}
+
+usage() {
+    cat <<EOF
+Overseerr API CLI
+
+Usage: $(basename "$0") <command> [options]
+
+── Search & Details ──────────────────────────────────────────────────────────
+  search <query>                        Search movies and TV shows (formatted)
+  search-json <query>                   Search with raw JSON output
+  movie <tmdb-id>                       Get movie details
+  tv <tmdb-id>                          Get TV show details
+  movie-recommendations <tmdb-id>       Movie recommendations
+  movie-similar <tmdb-id>               Similar movies
+  movie-ratings <tmdb-id>               Movie ratings (RT, IMDB, TMDB)
+  tv-recommendations <tmdb-id>          TV recommendations
+  tv-similar <tmdb-id>                  Similar TV shows
+  tv-season <tmdb-id> <season>          Season/episode details
+  person <person-id>                    Actor/director details
+
+── Discover ──────────────────────────────────────────────────────────────────
+  discover-movies [--page N] [--genre ID] [--sort BY]
+  discover-tv     [--page N] [--genre ID] [--sort BY]
+  upcoming-movies [--page N]
+  upcoming-tv     [--page N]
+  trending        [--page N]
+  watchlist       [--page N]
+
+── Requests ──────────────────────────────────────────────────────────────────
+  requests [--take N] [--skip N] [--filter F] [--sort S] [--user ID]
+                                        List requests
+                                        Filters: all pending approved declined
+                                                 available failed processing
+  request-count                         Pending/approved/declined summary
+  request <request-id>                  Get request details
+  request-movie <tmdb-id>               Create movie request
+  request-tv <tmdb-id> [--season N...]  Create TV request (defaults to all)
+  approve <request-id>                  Approve a request
+  decline <request-id>                  Decline a request
+  retry <request-id>                    Retry a failed request
+  update-request <request-id> [opts]    Update request
+                                        --season N (repeatable)
+                                        --server ID --profile ID --root DIR
+  delete-request <request-id>           Delete a request
+
+── Media ─────────────────────────────────────────────────────────────────────
+  media [--take N] [--skip N] [--filter F] [--sort S]
+                                        List media
+                                        Filters: available partial processing
+                                                 pending unknown
+  media-status <media-id> <status>      Update media status
+  watch-data <media-id>                 Playback/watch data for a media item
+  delete-media <media-id>               Delete a media item
+
+── Users ─────────────────────────────────────────────────────────────────────
+  users [--take N] [--skip N] [--sort S]
+                                        List all users
+  user <user-id>                        Get user details
+  user-quota <user-id>                  Get user request quotas
+  user-requests <user-id> [--take N] [--skip N]
+                                        Get requests for a specific user
+
+── Issues ────────────────────────────────────────────────────────────────────
+  issues [--take N] [--skip N] [--filter F] [--sort S]
+                                        List issues
+                                        Filters: open resolved
+  issue <issue-id>                      Get issue details
+  create-issue <media-id> <type> <msg>  Create an issue
+                                        Types: 1=video 2=audio 3=subtitle 4=other
+  resolve-issue <issue-id>              Mark issue resolved
+  close-issue <issue-id>                Close an issue
+
+── Failed Requests (shorthand) ───────────────────────────────────────────────
+  failed-requests [--take N] [--skip N] [--sort S]
+                                        List failed requests
+
+Examples:
+  $(basename "$0") search "The Matrix"
+  $(basename "$0") movie 603
+  $(basename "$0") request-movie 603
+  $(basename "$0") request-tv 1399 --season 1 --season 2
+  $(basename "$0") approve 42
+  $(basename "$0") requests --filter pending --take 20
+  $(basename "$0") discover-movies --sort popularity.desc
+  $(basename "$0") trending
+  $(basename "$0") users
+  $(basename "$0") failed-requests --sort modified
+EOF
+}
+
+# ── Search & Details ──────────────────────────────────────────────────────────
+
+format_search_results() {
+    jq -r '
+        .results
+        | map(select(.mediaType == "movie" or .mediaType == "tv"))
+        | .[:10]
+        | to_entries[]
+        | if .value.mediaType == "movie" then
+            "\(.key + 1). movie: \(.value.title) (\((.value.releaseDate // "") | split("-")[0] // "?")) - https://www.themoviedb.org/movie/\(.value.id)"
+          else
+            "\(.key + 1). tv: \(.value.name) (\((.value.firstAirDate // "") | split("-")[0] // "?")) - https://www.themoviedb.org/tv/\(.value.id)"
+          end
+    '
+}
+
+cmd_search() {
+    local query="${1:?query is required}"
+    api_call GET "/search?query=$(jq -rn --arg q "$query" '$q | @uri')" | format_search_results
+}
+
+cmd_search_json() {
+    local query="${1:?query is required}"
+    api_call GET "/search?query=$(jq -rn --arg q "$query" '$q | @uri')"
+}
+
+cmd_movie() {
+    local tmdb_id="${1:?tmdb id is required}"
+    api_call GET "/movie/${tmdb_id}"
+}
+
+cmd_tv() {
+    local tmdb_id="${1:?tmdb id is required}"
+    api_call GET "/tv/${tmdb_id}"
+}
+
+cmd_movie_recommendations() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local page="${2:-1}"
+    api_call GET "/movie/${tmdb_id}/recommendations?page=${page}"
+}
+
+cmd_movie_similar() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local page="${2:-1}"
+    api_call GET "/movie/${tmdb_id}/similar?page=${page}"
+}
+
+cmd_movie_ratings() {
+    local tmdb_id="${1:?tmdb id is required}"
+    api_call GET "/movie/${tmdb_id}/ratings"
+}
+
+cmd_tv_recommendations() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local page="${2:-1}"
+    api_call GET "/tv/${tmdb_id}/recommendations?page=${page}"
+}
+
+cmd_tv_similar() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local page="${2:-1}"
+    api_call GET "/tv/${tmdb_id}/similar?page=${page}"
+}
+
+cmd_tv_season() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local season="${2:?season number is required}"
+    api_call GET "/tv/${tmdb_id}/season/${season}"
+}
+
+cmd_person() {
+    local person_id="${1:?person id is required}"
+    api_call GET "/person/${person_id}"
+}
+
+# ── Discover ──────────────────────────────────────────────────────────────────
+
+build_query() {
+    local qs=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --page)    qs+="&page=${2:?value required}"; shift 2 ;;
+            --genre)   qs+="&genre=${2:?value required}"; shift 2 ;;
+            --network) qs+="&network=${2:?value required}"; shift 2 ;;
+            --sort)    qs+="&sortBy=${2:?value required}"; shift 2 ;;
+            --lang)    qs+="&language=${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    echo "${qs#&}"
+}
+
+cmd_discover_movies() {
+    local qs; qs=$(build_query "$@")
+    api_call GET "/discover/movies${qs:+?${qs}}"
+}
+
+cmd_discover_tv() {
+    local qs; qs=$(build_query "$@")
+    api_call GET "/discover/tv${qs:+?${qs}}"
+}
+
+cmd_upcoming_movies() {
+    local page="${1:-1}"
+    api_call GET "/discover/movies/upcoming?page=${page}"
+}
+
+cmd_upcoming_tv() {
+    local page="${1:-1}"
+    api_call GET "/discover/tv/upcoming?page=${page}"
+}
+
+cmd_trending() {
+    local page="${1:-1}"
+    api_call GET "/discover/trending?page=${page}"
+}
+
+cmd_watchlist() {
+    local page="${1:-1}"
+    api_call GET "/discover/watchlist?page=${page}"
+}
+
+# ── Requests ──────────────────────────────────────────────────────────────────
+
+cmd_requests() {
+    local take="20" skip="0" filter="" sort="" user=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take)   take="${2:?value required}"; shift 2 ;;
+            --skip)   skip="${2:?value required}"; shift 2 ;;
+            --filter) filter="${2:?value required}"; shift 2 ;;
+            --sort)   sort="${2:?value required}"; shift 2 ;;
+            --user)   user="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    local qs="take=${take}&skip=${skip}"
+    [[ -n "$filter" ]] && qs+="&filter=${filter}"
+    [[ -n "$sort"   ]] && qs+="&sort=${sort}"
+    [[ -n "$user"   ]] && qs+="&requestedBy=${user}"
+    api_call GET "/request?${qs}"
+}
+
+cmd_request_count() {
+    api_call GET "/request/count"
+}
+
+cmd_request() {
+    local request_id="${1:?request id is required}"
+    api_call GET "/request/${request_id}"
+}
+
+cmd_request_movie() {
+    local tmdb_id="${1:?tmdb id is required}"
+    local payload
+    payload=$(jq -nc --argjson id "$tmdb_id" '{mediaType:"movie", mediaId:$id}')
+    api_call POST "/request" -d "$payload"
+}
+
+cmd_request_tv() {
+    local tmdb_id="${1:?tmdb id is required}"
+    shift
+
+    local seasons=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --season|-s)
+                [[ $# -ge 2 ]] || { echo "ERROR: --season requires a value" >&2; exit 1; }
+                seasons+=("$2")
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+        esac
+    done
+
+    local payload
+    if [[ ${#seasons[@]} -eq 0 ]]; then
+        payload=$(jq -nc --argjson id "$tmdb_id" '{mediaType:"tv", mediaId:$id, seasons:"all"}')
+    else
+        payload=$(printf '%s\n' "${seasons[@]}" | jq -Rsc --argjson id "$tmdb_id" '
+            split("\n")
+            | map(select(length > 0) | tonumber)
+            | {mediaType:"tv", mediaId:$id, seasons:.}
+        ')
+    fi
+
+    api_call POST "/request" -d "$payload"
+}
+
+cmd_approve() {
+    local request_id="${1:?request id is required}"
+    api_call POST "/request/${request_id}/approve"
+}
+
+cmd_decline() {
+    local request_id="${1:?request id is required}"
+    api_call POST "/request/${request_id}/decline"
+}
+
+cmd_retry() {
+    local request_id="${1:?request id is required}"
+    api_call POST "/request/${request_id}/retry"
+}
+
+cmd_update_request() {
+    local request_id="${1:?request id is required}"
+    shift
+
+    local seasons=() server="" profile="" root=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --season)  seasons+=("${2:?value required}"); shift 2 ;;
+            --server)  server="${2:?value required}"; shift 2 ;;
+            --profile) profile="${2:?value required}"; shift 2 ;;
+            --root)    root="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+
+    local payload="{}"
+    [[ ${#seasons[@]} -gt 0 ]] && payload=$(printf '%s\n' "${seasons[@]}" | jq -Rsc \
+        'split("\n") | map(select(length > 0) | tonumber) | {seasons:.}')
+    [[ -n "$server"  ]] && payload=$(echo "$payload" | jq --argjson v "$server"  '. + {serverId:$v}')
+    [[ -n "$profile" ]] && payload=$(echo "$payload" | jq --argjson v "$profile" '. + {profileId:$v}')
+    [[ -n "$root"    ]] && payload=$(echo "$payload" | jq --arg v "$root"         '. + {rootFolder:$v}')
+
+    api_call PUT "/request/${request_id}" -d "$payload"
+}
+
+cmd_delete_request() {
+    local request_id="${1:?request id is required}"
+    api_call DELETE "/request/${request_id}"
+}
+
+cmd_failed_requests() {
+    local take="10" skip="0" sort="added"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take) take="${2:?value required}"; shift 2 ;;
+            --skip) skip="${2:?value required}"; shift 2 ;;
+            --sort) sort="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    api_call GET "/request?filter=failed&take=${take}&skip=${skip}&sort=${sort}"
+}
+
+# ── Media ─────────────────────────────────────────────────────────────────────
+
+cmd_media() {
+    local take="20" skip="0" filter="" sort=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take)   take="${2:?value required}"; shift 2 ;;
+            --skip)   skip="${2:?value required}"; shift 2 ;;
+            --filter) filter="${2:?value required}"; shift 2 ;;
+            --sort)   sort="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    local qs="take=${take}&skip=${skip}"
+    [[ -n "$filter" ]] && qs+="&filter=${filter}"
+    [[ -n "$sort"   ]] && qs+="&sort=${sort}"
+    api_call GET "/media?${qs}"
+}
+
+cmd_media_status() {
+    local media_id="${1:?media id is required}"
+    local status="${2:?status is required}"
+    api_call POST "/media/${media_id}/${status}"
+}
+
+cmd_watch_data() {
+    local media_id="${1:?media id is required}"
+    api_call GET "/media/${media_id}/watch_data"
+}
+
+cmd_delete_media() {
+    local media_id="${1:?media id is required}"
+    api_call DELETE "/media/${media_id}"
+}
+
+# ── Users ─────────────────────────────────────────────────────────────────────
+
+cmd_users() {
+    local take="20" skip="0" sort=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take) take="${2:?value required}"; shift 2 ;;
+            --skip) skip="${2:?value required}"; shift 2 ;;
+            --sort) sort="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    local qs="take=${take}&skip=${skip}"
+    [[ -n "$sort" ]] && qs+="&sort=${sort}"
+    api_call GET "/user?${qs}"
+}
+
+cmd_user() {
+    local user_id="${1:?user id is required}"
+    api_call GET "/user/${user_id}"
+}
+
+cmd_user_quota() {
+    local user_id="${1:?user id is required}"
+    api_call GET "/user/${user_id}/quota"
+}
+
+cmd_user_requests() {
+    local user_id="${1:?user id is required}"
+    shift
+    local take="20" skip="0"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take) take="${2:?value required}"; shift 2 ;;
+            --skip) skip="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    api_call GET "/user/${user_id}/requests?take=${take}&skip=${skip}"
+}
+
+# ── Issues ────────────────────────────────────────────────────────────────────
+
+cmd_issues() {
+    local take="20" skip="0" filter="" sort=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --take)   take="${2:?value required}"; shift 2 ;;
+            --skip)   skip="${2:?value required}"; shift 2 ;;
+            --filter) filter="${2:?value required}"; shift 2 ;;
+            --sort)   sort="${2:?value required}"; shift 2 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+    local qs="take=${take}&skip=${skip}"
+    [[ -n "$filter" ]] && qs+="&filter=${filter}"
+    [[ -n "$sort"   ]] && qs+="&sort=${sort}"
+    api_call GET "/issue?${qs}"
+}
+
+cmd_issue() {
+    local issue_id="${1:?issue id is required}"
+    api_call GET "/issue/${issue_id}"
+}
+
+cmd_create_issue() {
+    local media_id="${1:?media id is required}"
+    local issue_type="${2:?issue type is required (1=video 2=audio 3=subtitle 4=other)}"
+    local message="${3:?message is required}"
+    local payload
+    payload=$(jq -nc --argjson mid "$media_id" --argjson type "$issue_type" --arg msg "$message" \
+        '{mediaId:$mid, issueType:$type, message:$msg}')
+    api_call POST "/issue" -d "$payload"
+}
+
+cmd_resolve_issue() {
+    local issue_id="${1:?issue id is required}"
+    api_call POST "/issue/${issue_id}/resolved"
+}
+
+cmd_close_issue() {
+    local issue_id="${1:?issue id is required}"
+    api_call POST "/issue/${issue_id}/closed"
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+
+case "${1:-}" in
+    # Search & Details
+    search)                shift; cmd_search "$@" ;;
+    search-json)           shift; cmd_search_json "$@" ;;
+    movie)                 shift; cmd_movie "$@" ;;
+    tv)                    shift; cmd_tv "$@" ;;
+    movie-recommendations) shift; cmd_movie_recommendations "$@" ;;
+    movie-similar)         shift; cmd_movie_similar "$@" ;;
+    movie-ratings)         shift; cmd_movie_ratings "$@" ;;
+    tv-recommendations)    shift; cmd_tv_recommendations "$@" ;;
+    tv-similar)            shift; cmd_tv_similar "$@" ;;
+    tv-season)             shift; cmd_tv_season "$@" ;;
+    person)                shift; cmd_person "$@" ;;
+    # Discover
+    discover-movies)       shift; cmd_discover_movies "$@" ;;
+    discover-tv)           shift; cmd_discover_tv "$@" ;;
+    upcoming-movies)       shift; cmd_upcoming_movies "$@" ;;
+    upcoming-tv)           shift; cmd_upcoming_tv "$@" ;;
+    trending)              shift; cmd_trending "$@" ;;
+    watchlist)             shift; cmd_watchlist "$@" ;;
+    # Requests
+    requests)              shift; cmd_requests "$@" ;;
+    request-count)         shift; cmd_request_count "$@" ;;
+    request)               shift; cmd_request "$@" ;;
+    request-movie)         shift; cmd_request_movie "$@" ;;
+    request-tv)            shift; cmd_request_tv "$@" ;;
+    approve)               shift; cmd_approve "$@" ;;
+    decline)               shift; cmd_decline "$@" ;;
+    retry)                 shift; cmd_retry "$@" ;;
+    update-request)        shift; cmd_update_request "$@" ;;
+    delete-request)        shift; cmd_delete_request "$@" ;;
+    failed-requests)       shift; cmd_failed_requests "$@" ;;
+    # Media
+    media)                 shift; cmd_media "$@" ;;
+    media-status)          shift; cmd_media_status "$@" ;;
+    watch-data)            shift; cmd_watch_data "$@" ;;
+    delete-media)          shift; cmd_delete_media "$@" ;;
+    # Users
+    users)                 shift; cmd_users "$@" ;;
+    user)                  shift; cmd_user "$@" ;;
+    user-quota)            shift; cmd_user_quota "$@" ;;
+    user-requests)         shift; cmd_user_requests "$@" ;;
+    # Issues
+    issues)                shift; cmd_issues "$@" ;;
+    issue)                 shift; cmd_issue "$@" ;;
+    create-issue)          shift; cmd_create_issue "$@" ;;
+    resolve-issue)         shift; cmd_resolve_issue "$@" ;;
+    close-issue)           shift; cmd_close_issue "$@" ;;
+    # Help
+    -h|--help|help|"") usage ;;
+    *)
+        echo "Unknown command: $1" >&2
+        usage
+        exit 1
+        ;;
+esac
