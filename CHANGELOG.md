@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-07
+
+### Changed
+- Replaced 6 flat MCP tools (`search_media`, `get_movie_details`, `get_tv_show_details`,
+  `request_movie`, `request_tv_show`, `list_failed_requests`, `overseerr_help`) with a
+  single `overseerr` tool using the action + subaction pattern.
+- `action="help"` returns full documentation for all actions.
+- Each action supports `subaction="help"` for action-specific documentation.
+- Actions: `help`, `search`, `movie`, `tv`, `request`.
+
 ## [1.1.0] - 2026-04-07
 
 ### Added
