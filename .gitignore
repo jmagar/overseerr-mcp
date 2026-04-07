@@ -84,3 +84,5 @@ coverage.xml
 .tox/
 .nox/
 pip-log.txt
+
+CLAUDE.md.local
