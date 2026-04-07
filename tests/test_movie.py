@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 from fastmcp.exceptions import ToolError
 
-from overseerr_mcp.tools._movie import _handle_movie, _MOVIE_SUBACTIONS, _MOVIE_HELP
+from overseerr_mcp.tools._movie import _MOVIE_HELP, _MOVIE_SUBACTIONS, _handle_movie
 
 
 @pytest.fixture
