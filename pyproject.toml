@@ -27,6 +27,9 @@ select = ["E", "F", "I", "UP"]
 
 [tool.ty]
 
+[tool.ty.environment]
+python = ".venv"
+
 [dependency-groups]
 dev = ["ruff>=0.9", "ty>=0.0.1a3", "pytest>=8", "pytest-asyncio>=0.24"]
 

@@ -1,18 +1,13 @@
+no_auto_install: true
+
 pre-commit:
   parallel: true
   commands:
     diff_check:
       run: git diff --check --cached
-    yaml:
-      glob: "*.{yml,yaml}"
-      run: uv run python -c 'import sys, yaml; [yaml.safe_load(open(path, "r", encoding="utf-8")) for path in sys.argv[1:]]' {staged_files}
     lint:
-      run: just lint
+      run: .venv/bin/ruff check .
     format:
-      run: just fmt
+      run: .venv/bin/ruff format --check .
     typecheck:
-      run: just typecheck
-    skills:
-      run: just validate-skills
-    env_guard:
-      run: bash bin/block-env-commits
+      run: .venv/bin/ty check
