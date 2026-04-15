@@ -1,6 +1,6 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.0.2",
+  "version": "1.2.1",
   "description": "Overseerr media requests via MCP tools with HTTP fallback. Search movies and TV shows, submit requests, and monitor failed requests.",
   "author": {
     "name": "Jacob Magar"
@@ -16,30 +16,59 @@
     "mcp"
   ],
   "userConfig": {
-    "overseerr_mcp_url": {
-      "type": "string",
-      "title": "Overseerr MCP Server URL",
-      "description": "URL of the overseerr-mcp MCP server (e.g. http://overseerr-mcp:9151).",
-      "default": "https://overseerr.tootie.tv/mcp",
-      "sensitive": false
-    },
-    "overseerr_mcp_token": {
-      "type": "string",
-      "title": "MCP Server Bearer Token",
-      "description": "Bearer token for authenticating with the MCP server. Must match OVERSEERR_MCP_TOKEN in the server's .env. Generate with: openssl rand -hex 32",
-      "sensitive": true
-    },
     "overseerr_url": {
       "type": "string",
-      "title": "Overseerr Server URL",
+      "title": "Overseerr URL",
       "description": "Base URL of your Overseerr server, e.g. https://overseerr.example.com. No trailing slash.",
-      "sensitive": true
+      "sensitive": false
     },
-    "overseerr_api_key": {
+    "plex_url": {
       "type": "string",
-      "title": "Overseerr API Key",
-      "description": "Overseerr API key. Found in Overseerr Settings → General → API Key.",
-      "sensitive": true
+      "title": "Plex URL",
+      "description": "Base URL of your Plex server, e.g. http://plex:32400. No trailing slash.",
+      "sensitive": false
+    },
+    "radarr_url": {
+      "type": "string",
+      "title": "Radarr URL",
+      "description": "Base URL of your Radarr server, e.g. http://radarr:7878. No trailing slash.",
+      "sensitive": false
+    },
+    "sonarr_url": {
+      "type": "string",
+      "title": "Sonarr URL",
+      "description": "Base URL of your Sonarr server, e.g. http://sonarr:8989. No trailing slash.",
+      "sensitive": false
+    },
+    "prowlarr_url": {
+      "type": "string",
+      "title": "Prowlarr URL",
+      "description": "Base URL of your Prowlarr server, e.g. http://prowlarr:9696. No trailing slash.",
+      "sensitive": false
+    },
+    "tautulli_url": {
+      "type": "string",
+      "title": "Tautulli URL",
+      "description": "Base URL of your Tautulli server, e.g. http://tautulli:8181. No trailing slash.",
+      "sensitive": false
+    },
+    "sabnzbd_url": {
+      "type": "string",
+      "title": "SABnzbd URL",
+      "description": "Base URL of your SABnzbd server, e.g. http://sabnzbd:8080. No trailing slash.",
+      "sensitive": false
+    },
+    "qbittorrent_url": {
+      "type": "string",
+      "title": "qBittorrent URL",
+      "description": "Base URL of your qBittorrent WebUI, e.g. http://qbittorrent:8080. No trailing slash.",
+      "sensitive": false
+    },
+    "appdata_path": {
+      "type": "string",
+      "title": "Appdata Path",
+      "description": "Path to your service appdata directory. Local: /mnt/cache/appdata — Remote (SSH): myserver:/mnt/cache/appdata. Host must be configured in ~/.ssh/config with key auth.",
+      "sensitive": false
     }
   }
 }

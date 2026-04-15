@@ -49,7 +49,6 @@ Implicit dependency. ASGI server for HTTP transport.
 | --- | --- | --- |
 | `ruff` | >=0.9 | Fast Python linter and formatter |
 | `ty` | >=0.0.1a3 | Type checker (Astral) |
-| `pre-commit` | >=4.0 | Git hook management |
 | `pytest` | >=8.0 | Test framework |
 | `pytest-asyncio` | >=0.23 | Async test support |
 

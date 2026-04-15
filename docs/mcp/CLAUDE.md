@@ -17,7 +17,7 @@ Documentation for the overseerr-mcp MCP server.
 | [TESTS.md](TESTS.md) | Test strategy, unit tests, and integration tests |
 | [MCPORTER.md](MCPORTER.md) | Live smoke testing with mcporter and test_live.sh |
 | [CICD.md](CICD.md) | GitHub Actions workflows and CI pipeline |
-| [PRE-COMMIT.md](PRE-COMMIT.md) | Pre-commit hooks and local checks |
+| [PRE-COMMIT.md](PRE-COMMIT.md) | Local verification commands and repo checks |
 | [PUBLISH.md](PUBLISH.md) | Publishing to PyPI, GHCR, and MCP Registry |
 | [CONNECT.md](CONNECT.md) | Client connection examples |
 | [DEV.md](DEV.md) | Local development workflow |
