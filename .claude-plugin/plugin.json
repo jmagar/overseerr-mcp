@@ -1,6 +1,6 @@
 {
   "name": "overseerr-mcp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Overseerr media requests via MCP tools with HTTP fallback. Search movies and TV shows, submit requests, and monitor failed requests.",
   "author": {
     "name": "Jacob Magar"
@@ -67,7 +67,7 @@
     "appdata_path": {
       "type": "string",
       "title": "Appdata Path",
-      "description": "Path to your service appdata directory. Local: /mnt/cache/appdata \u2014 Remote (SSH): myserver:/mnt/cache/appdata. Host must be configured in ~/.ssh/config with key auth.",
+      "description": "Path to your service appdata directory. Local: /mnt/cache/appdata — Remote (SSH): myserver:/mnt/cache/appdata. Host must be configured in ~/.ssh/config with key auth.",
       "sensitive": false
     }
   }

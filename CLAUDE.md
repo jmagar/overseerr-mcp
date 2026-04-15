@@ -17,6 +17,10 @@ just lint      # ruff check
 just build     # docker build
 ```
 
+## Justfile rules
+
+The Justfile is an entrypoint only — no business logic inline. Recipes must shell out to scripts in `bin/` or `tests/`. If a recipe needs more than a single command, it belongs in a script.
+
 
 ## Version Bumping
 
